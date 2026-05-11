@@ -1,0 +1,882 @@
+<html xmlns="http://www.w3.org/1999/xhtml"><head><script type="text/javascript" language="javascript">
+function DisableBackButton() {
+window.history.forward()
+}
+DisableBackButton();
+window.onload = DisableBackButton;
+window.onpageshow = function(evt) { if (evt.persisted) DisableBackButton() }
+window.onunload = function() { void (0) }
+</script>
+
+
+
+
+
+
+<title>DRT Filing</title>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<!--Morris Chart CSS -->
+<link rel="stylesheet" href="./assets/plugins/morris/morris.css">
+<!-- Basic Css files -->
+<link href="./assets/css/bootstrap.min.css" rel="stylesheet" type="text/css">
+<link href="./assets/plugins/bootstrap-datepicker/css/bootstrap-datepicker.min.css" rel="stylesheet" type="text/css">
+<link href="./assets/css/fontawesome.min.css" rel="stylesheet" type="text/css">
+<link href="./assets/css/icons.css" rel="stylesheet" type="text/css">
+<link href="./assets/css/style.css" rel="stylesheet" type="text/css">
+<link href="./assets/css/style-new.css" rel="stylesheet" type="text/css">
+<link href="./assets/css/jquery.dataTables.min.css" rel="stylesheet">
+
+<!-- jQuery  -->
+<script src="./assets/js/jquery.min.js"></script>
+    <script src="./assets/js/popper.min.js"></script>
+    <script src="./assets/js/bootstrap.min.js"></script>
+    <script src="./assets/plugins/morris/morris.min.js"></script>
+    <script src="./assets/plugins/raphael/raphael-min.js"></script>
+	<script src="./assets/js/jquery.dataTables.min.js"></script>  
+    <!-- <script src="assets/pages/morris.init.js"></script> -->
+   <!-- <script src="../js/nicci.js"></script>
+	    <script type="text/javascript">
+	    $(document).ready(function() {
+	        loadnicci('ContentNicci', 'PdMy57DI4FxFy1L9');
+	    });
+	    </script>-->
+</head>
+<body>
+<!-- Start -->
+<!--<div id="ContentNicci"></div>-->
+<div class="row top-black-line">	</div>
+
+<div class="container-fluid header-div">
+
+ <div class="row">
+   <div class="col-sm-1">
+  	<a class="float-right" href="#">
+ 	 <img src="./assets/images/emblem-dark.png" height="80" alt="emblem" style="margin-top: 5px;">
+	</a>
+   </div>
+   <div class="col-sm-7">
+   <div style="margin-top: 2px;">
+	<h6 style="font-family: robotobold"> 
+	<span>भारत सरकार &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;वित्त मत्रांलय वित्तीय सेवाएं विभाग</span><br>
+	<span>Government of India &nbsp;&nbsp;&nbsp;<span>Ministry of Finance Department of Financial Services</span></span><br>
+	</h6>
+   
+   <h5 style="font-family: robotobold"> 
+	  DEBTS RECOVERY APPELLATE TRIBUNALS (DRATs)<br>
+	 <span style="font-family: robotomedium"> DEBTS RECOVERY TRIBUNALS (DRTs) </span></h5> </div> 
+
+	
+<marquee direction="left">Data of Preceding Month is going to be fetched by 7th morning of every month. DRTs are requested to feed up the data by 6th a/n of every month</marquee>
+
+
+   </div>
+   <div class="col-sm-4">
+     <a href="https://digitalindia.gov.in/" target="_blank">
+	  <img src="./assets/images/aazadi-ka-amrit-mohotsav.png" class="float-right" alt="azadi-logo" width="120">
+	  <img src="./assets/images/swach-bharat.png" class="float-right" alt="swatch-bharat-logo" width="150">
+	 </a>
+   </div>
+ </div>
+</div>
+
+
+<nav class="navbar navbar-expand-lg nav-bg">
+<button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarColor01" aria-controls="navbarColor01" aria-expanded="false" aria-label="Toggle navigation">
+	<span class="navbar-toggler-icon"></span>
+</button>
+<div class="collapse navbar-collapse text-center" id="navbarColor01">
+	<ul class="navbar-nav mr-auto">
+            <li class="nav-item"><a class="nav-link" href="./index.php">Home</a></li>
+        
+                  <li class="nav-item dropdown p-noline">
+                  <a class="nav-link" data-toggle="dropdown" id="Preview" role="button" aria-haspopup="true" aria-expanded="false">Application in DRT</a>
+                  <div class="dropdown-menu new-menu" aria-labelledby="Preview">
+                      <a class="dropdown-item" href="./filing/oa.php">Original Application</a>
+                      <a class="dropdown-item" href="./filing/sa.php">Securitisation Application</a>
+        			  <a class="dropdown-item" href="./filing/add_propertyDetails.php">Add Property Details</a>
+        			  <a class="dropdown-item" href="./filing/addguarantor.php">Add Guarantor Details</a>
+                       <a class="dropdown-item" href="./filing/ap.php">Additional Party</a>
+                      <a class="dropdown-item" href="./filing/aa.php">Additional Address</a>
+        			  <a class="dropdown-item" href="./filing/additional_advocate.php">Additional Advocate</a>
+                       <a class="dropdown-item" href="./filing/additional_advocate_change.php">Change Advocate</a>
+        			  	 <a class="dropdown-item" href="./filing/other_filing.php">Other Filing</a>
+
+        			  <a class="dropdown-item" href="./filing/ia.php">IA (in OA/SA/RC/TRC)</a>
+					   <a class="dropdown-item" href="./filing/rc_trc.php">RA/IA/MA/Appeal Against RC/TRC</a>
+					   <a class="dropdown-item" href="./filing/ex_filing.php">Case Filing(Other than DRT)</a>
+                        <a class="dropdown-item" href="./filing/tran_case_drt_old.php">Transfer Cases List(Till 3-Nov-2022)</a>
+                      <a class="dropdown-item" href="./filing/tran_case_drt.php">Transfer Cases List</a>
+
+
+                       <a class="dropdown-item" href="./filing/tref_rc_case.php">Transfer RC Cases List</a>
+                    <!--  <a class="dropdown-item" href="./filing/ma.php">Miscellaneous Filing</a>
+                      <a class="dropdown-item" href="./filing/ea.php">Execution Filing</a>
+                      -->
+        	             </div>
+
+                  </li>
+
+        		  <li class="nav-item dropdown p-noline">
+                  <a class="nav-link" data-toggle="dropdown" id="Preview" role="button" aria-haspopup="true" aria-expanded="false">Other Application</a>
+                  <div class="dropdown-menu new-menu" aria-labelledby="Preview">
+
+
+        	            <!-- <a class="dropdown-item" href="./filing/aaro.php">Review Application</a>-->
+
+        	            <a class="dropdown-item" href="./filing/accd.php">Certified Copy</a>
+        	        <!--     <a class="dropdown-item" href="./filing/air.php">Record Inspection</a> -->
+        	            <!--<a class="dropdown-item" href="./filing/ca.php">Chamber Appeal</a>-->
+        	             <a class="dropdown-item" href="./filing/fc.php">Caveat Filing</a>
+						   <a class="dropdown-item" href="./filing/caveat_additional.php">Add Caveat Additional Party</a>
+        	              <!--<a class="dropdown-item" href="./filing/oa.php">Transfer OA Filing</a>
+        	               <a class="dropdown-item" href="./filing/sa.php">Transfer SA Filing</a>-->
+        	            <a class="dropdown-item" href="./filing/legal.php">Legal Heirs</a>
+                      <!--<a class="dropdown-item" href="./filing/fr.php">File Reply</a>-->
+                      <a class="dropdown-item" href="./filing/ef.php">Evidence Filing</a>
+               			<a class="dropdown-item" href="./filing/counterfiling.php">Counter Claim</a>
+						<a class="dropdown-item" href="./filing/banktoarc.php">Change Bank To ARC and ARC To Bank</a>
+                  <a class="dropdown-item" href="./filing/casetypechang.php">Change Case Type</a>
+				  <a class="dropdown-item" href="./filing/review_rctrc.php">RC/TRC Review</a>
+                
+                    
+        	             </div>
+
+                  </li>
+
+
+
+                  <li class="nav-item dropdown p-noline">
+                  <a class="nav-link" data-toggle="dropdown" id="Preview" role="button">Document Details</a>
+                  <div class="dropdown-menu new-menu" aria-labelledby="Preview">
+				  <a class="dropdown-item" href="./filing/doc.php">Document Filing</a>
+                   <a class="dropdown-item" href="./filing/doc_view.php"> Document View</a>
+                    <a class="dropdown-item" href="./filing/rc_doc_view.php">RC Document View</a>
+                  <a class="dropdown-item" href="./filing/online_date_doc_view.php">Date Wise View Document Online</a>
+                  <a class="dropdown-item" href="./filing/offline_date_doc_view.php">Date Wise View Document Offline</a>
+                  
+                  <!--<a class="dropdown-item" href="./filing/documentUpload.php">Document Upload's</a>-->
+
+                  </div>
+                  </li>
+                  <li class="nav-item dropdown p-noline">
+                  <a class="nav-link" data-toggle="dropdown" id="Preview" role="button"><font color="red">*</font>Legacy Data</a>
+                  <div class="dropdown-menu new-menu" aria-labelledby="Preview">
+				  <a class="dropdown-item" href="./legacydata/pet_res_blank.php">Applicant &amp; Defendanf Name Update</a>
+                   <a class="dropdown-item" href="./legacydata/regis_date.php">Reg. Date Not Available</a>
+				   <a class="dropdown-item" href="./legacydata/case_date_update.php">Filing/Reg./Disposal Date Update</a>
+
+                    <a class="dropdown-item" href="./legacydata/state_district_not.php">State &amp; District Not Available</a>
+                    <a class="dropdown-item" href="./legacydata/pending_disposal_case.php">Check Case Pending OR Disposal</a>
+                     <a class="dropdown-item" href="./legacydata/trc_pet_res_name.php">TRC Case Party Name Update</a>
+                     <a class="dropdown-item" href="./legacydata/ia_transferstatus.php">IA Transfer Status</a>
+                   </div>
+                   </li>
+
+
+
+        	         <li class="nav-item dropdown p-noline">
+               <a class="nav-link" data-toggle="dropdown" id="Preview" role="button">Backlog</a>
+                  <div class="dropdown-menu new-menu" aria-labelledby="Preview">
+                 <a class="dropdown-item" href="./filing/backlog.php">Backlog Filing</a>
+                  <a class="dropdown-item" href="./filing/backlog_modify.php">Modify OA/SA Pending Case Only</a>
+				  <a class="dropdown-item" href="./filing/party_res_name_update.php">Party Name Modify</a>
+                  <a class="dropdown-item" href="./filing/bankmerged.php">Bank Merged</a>
+				  <a class="dropdown-item" href="./filing/backlog_modify_disposal.php">Modify OA/SA Disposal Case Only</a>
+
+				  <a class="dropdown-item" href="./filing/caveat_modify.php">Modify Caveat Filing</a>
+           <a class="dropdown-item" href="./listing/backlog.php">Backlog (Old Dairy no wise)</a>
+                  <a class="dropdown-item" href="./listing/ia.php">IA Filing (Backlog)</a>
+                  <a class="dropdown-item" href="./listing/ma_backlog.php">MA/RA/EX/Appeal Backlog</a>
+             		  <a class="dropdown-item" href="./filing/ex_filingbacklog.php">Backlog Case Filing(Other than DRT)</a>
+		    <!--<a class="dropdown-item" href="./filing/backlog_transfercases.php">Backlog Transfer Cases(TMA/TRA/Appeal(T))</a>-->
+
+
+				  </div>
+                  </li>
+
+
+				  <li class="nav-item dropdown p-noline">
+                    <a class="nav-link" data-toggle="dropdown" id="Preview" role="button">Payment Details</a>
+                    <div class="dropdown-menu new-menu" aria-labelledby="Preview">
+                    <a class="dropdown-item" href="./filing/paymentmore.php">Add DD/IPO/Bharat Kosh</a>
+				<a class="dropdown-item" href="./filing/courtFeeModify.php">DD/IPO Modify</a>
+
+				  <a class="dropdown-item" href="./filing/updateSuit.php">Update Suit Aomunt</a>
+				  <a class="dropdown-item" href="./rc/partial_loan_payment.php">Partial Loan Payment During OA/SA</a>
+					<a class="dropdown-item" href="./filing/checkbhartkosh.php?filingNo=1111">Verify Bharat Kosh Transaction Id</a>
+					</div>           
+                  </li>
+				  
+        
+                  <li class="nav-item dropdown p-noline">
+                    <a class="nav-link" data-toggle="dropdown" id="Preview" role="button">Report</a>	         
+                    <div class="dropdown-menu new-menu" aria-labelledby="Preview">
+                    <a class="dropdown-item" href="./filing/oaReport.php">Filing Report</a> 
+					 <a class="dropdown-item" href="./filing/AllFilingReport.php">All Filing Report</a> 
+					 <a class="dropdown-item" href="./filing/iaReport.php">IA Report</a> 
+					<a class="dropdown-item" href="./filing/caveat_search.php">Caveat Report</a> 
+                    <a class="dropdown-item" href="./filing/property_report.php">Property Report</a>
+					 <a class="dropdown-item" href="./filing/ccReport.php">Certified Copy</a>
+                      <a class="dropdown-item" href="./filing/bhartkoshReport.php">Bharat Kosh Payment Report</a> 
+                       <!--<a class="dropdown-item" href="./reg/helpdesk_report_dev.php">Help Desk</a>--> 
+                       <a class="dropdown-item" href="./filing/fee_tracking.php">With Fee &amp; Wihtout Fee Report </a>
+                   
+					</div>           
+                  </li>
+                  <!-- <li class="nav-item"><a class="nav-link" href="./logout1.php">Logout</a></li> -->
+    
+        
+                        <!--  <li class="nav-item"><a class="nav-link" href="report.php">Reportsssssss</a></li> -->
+  				  
+	  
+	    
+	  
+	   
+	  
+	  
+	   
+	  
+	  
+	  	                   <li class="nav-item"><a class="nav-link" href="./reg/change_password.php">Change Password</a></li>
+	                   <li class="nav-item"><a class="nav-link" href="./logout1.php">Logout</a></li>
+          
+        </ul>
+		
+		
+		
+	
+      </div>
+      </nav>
+      
+
+<!-- MAIN CONTENT -->
+<br>
+<br>
+<div class="container min-con-height">
+
+
+   <script>
+  $(window).on('load', function() {
+    $('#myModal').modal('show');
+  });
+</script>
+<style>
+ .blink{
+    animation: blinker 1s linear infinite;
+    color: #2d38be;
+    font-size: 15px;
+    font-weight: bold;
+    font-family: sans-serif;
+    
+}
+</style>
+
+ <p></p>
+   <!-- Menu access code level : 1 Open -->
+    
+ <h5 class="text-center"> Welcome Facilitation User (<font color="#0033FF"><b>DRT1DELHI</b></font>) At DELHI DRT 1</h5>
+
+<hr>
+
+<div class="row">
+    <div class="col-md-2">
+        <div class="card-counter primary">
+            <i class="fa fa-code-fork"></i>
+            
+            <span class="count-numbers">45</span>
+            <span class="count-name">Total No Of Cases</span>
+            <div class="card-link">
+                <a href="#" id="totalNoofCasesClick" class="btn btn-sm float-right btn-primary">View Details</a>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-2">
+        <div class="card-counter success">
+            <i class="fa fa-bullseye"></i>
+            
+            <span class="count-numbers">37</span>
+            <span class="count-name">Total Pending Cases</span>
+            <div class="card-link">
+                <a href="#" id="TotalNoOfPendingCasesClick" class="btn btn-sm float-right btn-success">View Details</a>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-2">
+        <div class="card-counter danger">
+            <i class="fa fa-ticket"></i>
+                        <span class="count-numbers">8</span>
+            <span class="count-name">Total Disposed Case</span>
+            <div class="card-link">
+                <a href="#" id="TotalNoOfDisposedClick" class="btn btn-sm float-right btn-danger">View Details</a>
+            </div>
+        </div>
+    </div>
+
+
+
+    <div class="col-md-2">
+        <div class="card-counter info">
+            <i class="fa fa-users"></i>
+            
+            <span class="count-numbers">2</span>
+		<span class="count-name" style="font-size:13px">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;OA,SA,MA Online Cases</span>
+            <div class="card-link">
+                <a href="#" id="TotalNoOfTodayClick" class="btn btn-sm float-right btn-info">View Details</a>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-2">
+        <div class="card-counter" style="background-color:brown">
+            <i class="fa fa-users"></i>
+            
+        <span class="count-numbers" style="color:white">1046</span>
+            <span class="count-name" style="color:white"> &nbsp;&nbsp;&nbsp;&nbsp;Other Online Cases</span>
+            <div class="card-link">
+		<a href="#" id="TotalNoOfTodayClickother" style="background-color:brown; color:white;" class="btn btn-sm float-right btn-light">View Details</a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<hr>
+
+<div class="row">
+	<div class="col-md">
+		<span id="loadtxtdata">
+
+
+<div class="row">
+<div class="col-md">
+    <div id="totalNoofCasesDiv" class="answer_list"> 
+        <fieldset>
+         <legend> <h1><font color="#000000" size="3">List  Of  Total No Of Cases </font></h1></legend>
+                <div class="table-responsive">
+                    <div id="dataTable1_wrapper" class="dataTables_wrapper no-footer"><div class="dataTables_length" id="dataTable1_length"><label>Show <select name="dataTable1_length" aria-controls="dataTable1" class=""><option value="10">10</option><option value="25">25</option><option value="50">50</option><option value="75">75</option><option value="100">100</option></select> entries</label></div><div id="dataTable1_filter" class="dataTables_filter"><label>Search:<input type="search" class="" placeholder="" aria-controls="dataTable1"></label></div><table id="dataTable1" class="table table-bordered table-hover table-striped dataTable no-footer" aria-describedby="dataTable1_info">
+                    <thead>
+                    <tr><th class="sorting sorting_asc" tabindex="0" aria-controls="dataTable1" rowspan="1" colspan="1" aria-sort="ascending" aria-label="S.No: activate to sort column descending" style="width: 35.8828px;">S.No</th><th class="sorting" tabindex="0" aria-controls="dataTable1" rowspan="1" colspan="1" aria-label="Filing No: activate to sort column ascending" style="width: 114.234px;">Filing No</th><th class="sorting" tabindex="0" aria-controls="dataTable1" rowspan="1" colspan="1" aria-label="Case No: activate to sort column ascending" style="width: 126.516px;">Case No</th><th class="sorting" tabindex="0" aria-controls="dataTable1" rowspan="1" colspan="1" aria-label="Petitioner Name: activate to sort column ascending" style="width: 272.203px;">Petitioner Name</th><th class="sorting" tabindex="0" aria-controls="dataTable1" rowspan="1" colspan="1" aria-label="Respondent Name: activate to sort column ascending" style="width: 244.305px;">Respondent Name</th><th class="sorting" tabindex="0" aria-controls="dataTable1" rowspan="1" colspan="1" aria-label="Filing Date: activate to sort column ascending" style="width: 71.8594px;">Filing Date</th></tr>
+                    </thead>
+                          
+                    <tbody>
+                    
+                                            
+                                                
+                                                
+                                                
+                                                
+                                                
+                                                
+                                                
+                                                
+                                                
+                                                
+                                                
+                                                
+                                                
+                                                
+                                                
+                                                
+                                                
+                                                
+                                                
+                                                
+                                                
+                                                
+                                                
+                                                
+                                                
+                                                
+                                                
+                                                
+                                                
+                                                
+                                                
+                                                
+                                                
+                                                
+                                                
+                                                
+                                                
+                                                
+                                                
+                                                
+                                                
+                                                
+                                                
+                                                
+                                                                <tr class="odd">
+                        <td class="sorting_1">1</td>
+                            <td>
+                                 070110000052026                            </td>
+                            <td>
+                                 400600000012026                                 
+                            </td>
+                            <td>
+                                 BANK OF INDIA                            </td>
+                            <td>
+                                 KOCHAR TRADERS                            </td>
+                            <td>
+                                02/01/2026                                  
+                            </td>
+                        </tr><tr class="even">
+                        <td class="sorting_1">2</td>
+                            <td>
+                                 070110000062026                            </td>
+                            <td>
+                                 401500000032026                                 
+                            </td>
+                            <td>
+                                 STATE BANK OF PATIALA                            </td>
+                            <td>
+                                  Gaurav sharma                            </td>
+                            <td>
+                                02/01/2026                                  
+                            </td>
+                        </tr><tr class="odd">
+                        <td class="sorting_1">3</td>
+                            <td>
+                                 070110000072026                            </td>
+                            <td>
+                                 401500000022026                                 
+                            </td>
+                            <td>
+                                 BANK OF BARODA (DENA BANK)                            </td>
+                            <td>
+                                 MAHIPAL SINGH                            </td>
+                            <td>
+                                02/01/2026                                  
+                            </td>
+                        </tr><tr class="even">
+                        <td class="sorting_1">4</td>
+                            <td>
+                                 070110000082026                            </td>
+                            <td>
+                                 401500000012026                                 
+                            </td>
+                            <td>
+                                 STATE BANK OF PATIALA                            </td>
+                            <td>
+                                 KUNAL KRISHAN OHRI                            </td>
+                            <td>
+                                02/01/2026                                  
+                            </td>
+                        </tr><tr class="odd">
+                        <td class="sorting_1">5</td>
+                            <td>
+                                 070110000302026                            </td>
+                            <td>
+                                 400600000022026                                 
+                            </td>
+                            <td>
+                                 BANK OF BARODA                            </td>
+                            <td>
+                                 M/S PRAGATI PROJECTS                            </td>
+                            <td>
+                                06/01/2026                                  
+                            </td>
+                        </tr><tr class="even">
+                        <td class="sorting_1">6</td>
+                            <td>
+                                 070110000942026                            </td>
+                            <td>
+                                 400600000032026                                 
+                            </td>
+                            <td>
+                                 BANK OF BARODA                            </td>
+                            <td>
+                                 Bilal                            </td>
+                            <td>
+                                17/01/2026                                  
+                            </td>
+                        </tr><tr class="odd">
+                        <td class="sorting_1">7</td>
+                            <td>
+                                 070110001502026                            </td>
+                            <td>
+                                 402100000012026                                 
+                            </td>
+                            <td>
+                                 MADHYA PRADESH POWER                            </td>
+                            <td>
+                                 PUNJAB AND SIND BANK                            </td>
+                            <td>
+                                31/01/2026                                  
+                            </td>
+                        </tr><tr class="even">
+                        <td class="sorting_1">8</td>
+                            <td>
+                                 070110001512026                            </td>
+                            <td>
+                                 400600000042026                                 
+                            </td>
+                            <td>
+                                 Ujjivan Small Finance Bank Limited                            </td>
+                            <td>
+                                 ASHOK KUMAR                            </td>
+                            <td>
+                                31/01/2026                                  
+                            </td>
+                        </tr><tr class="odd">
+                        <td class="sorting_1">9</td>
+                            <td>
+                                 070110001702026                            </td>
+                            <td>
+                                 401100000012026                                 
+                            </td>
+                            <td>
+                                 DINESH RASTOGI                            </td>
+                            <td>
+                                 Cholamandalam Investment and Finance Company Ltd                            </td>
+                            <td>
+                                03/02/2026                                  
+                            </td>
+                        </tr><tr class="even">
+                        <td class="sorting_1">10</td>
+                            <td>
+                                 070110001752026                            </td>
+                            <td>
+                                 401500000042026                                 
+                            </td>
+                            <td>
+                                 PUNJAB NATIONAL BANK                            </td>
+                            <td>
+                                 DELCO PRECITONE JEWELLERS PVT LTD                            </td>
+                            <td>
+                                04/02/2026                                  
+                            </td>
+                        </tr></tbody>  
+                </table><div class="dataTables_info" id="dataTable1_info" role="status" aria-live="polite">Showing 1 to 10 of 45 entries</div><div class="dataTables_paginate paging_simple_numbers" id="dataTable1_paginate"><a class="paginate_button previous disabled" aria-controls="dataTable1" aria-disabled="true" aria-role="link" data-dt-idx="previous" tabindex="-1" id="dataTable1_previous">Previous</a><span><a class="paginate_button current" aria-controls="dataTable1" aria-role="link" aria-current="page" data-dt-idx="0" tabindex="0">1</a><a class="paginate_button " aria-controls="dataTable1" aria-role="link" data-dt-idx="1" tabindex="0">2</a><a class="paginate_button " aria-controls="dataTable1" aria-role="link" data-dt-idx="2" tabindex="0">3</a><a class="paginate_button " aria-controls="dataTable1" aria-role="link" data-dt-idx="3" tabindex="0">4</a><a class="paginate_button " aria-controls="dataTable1" aria-role="link" data-dt-idx="4" tabindex="0">5</a></span><a class="paginate_button next" aria-controls="dataTable1" aria-role="link" data-dt-idx="next" tabindex="0" id="dataTable1_next">Next</a></div></div>
+                 
+                </div>
+        </fieldset>
+    </div> 
+
+
+
+
+
+
+
+
+
+<!-- <a href="abctext.php?abc=aaaaaaa&y=bbbbbbbb" data-title="Title 1" data-remote="false"  data-toggle="modal" data-target="#defectiveCase" onclick="modelpopup()" > newprint </a> -->
+   <!-- The Modal -->
+   <div class="modal" id="defectiveCase">
+    <div class="modal-dialog modal-lg" style="max-width:1000px;">
+      <div class="modal-content">
+      
+        <!-- Modal Header -->
+        <div class="modal-header">
+          <h4 class="modal-title1">Document List</h4>
+          <button type="button" class="close" data-dismiss="modal">×</button>
+        </div>
+        
+        <!-- Modal body -->
+        <div class="modal-body">
+		  
+        </div>
+        
+        <!-- Modal footer -->
+        <div class="modal-footer">
+       
+          <button type="button" class="btn btn-danger" data-dismiss="modal">Close</button>
+        </div>
+        
+      </div>
+    </div>
+  </div>
+
+  <script>
+	 function modelpopup(){		
+		 $("#defectiveCase").on("show.bs.modal", function(e) {
+			 var link = $(e.relatedTarget);
+             $(this).find(".modal-body").load(link.attr("href"));
+			 $(this).find("#docid").val(link.attr("data-did"));
+			 });
+	}
+   
+	 
+</script> 
+<script>
+	$(document).ready( function () {
+    $('#dataTable1').DataTable({
+		"lengthMenu": [  10, 25, 50, 75, 100 ]
+	});	
+    $('#dataTable2').DataTable({
+		"lengthMenu": [  10, 25, 50, 75, 100 ]
+	});	
+    $('#dataTable3').DataTable({
+		"lengthMenu": [  10, 25, 50, 75, 100 ]
+	});	
+    $('#dataTable4').DataTable({
+		"lengthMenu": [  10, 25, 50, 75, 100 ]
+	});	
+    $('#dataTable5').DataTable({
+		"lengthMenu": [  10, 25, 50, 75, 100 ]
+	});	
+  });
+
+
+$(document).ready(function(){
+    
+    $(document).on("click",".oasamacaseacc",(function () {
+        var ids =$(this).attr('id');     
+   
+                $.ajax({
+                    url: "filing/accepted.php",
+                    data: {"filno": ids,"acttype":'oasamaaccept'},
+                    success: function (result) {
+                        alert("Accepted");
+                        $("#"+ids).parent().html("Accepted");
+                    },
+                    error: function (xhr, status, error) {
+                        console.log(error);
+                    }
+                });
+            })); 
+        $(document).on("click",".othercase",(function () {
+        var ids =$(this).attr('id');     
+        
+                $.ajax({
+                    url: "filing/accepted.php",
+                    data: {"filno": ids,"acttype":'oasamaaccept'},
+                    success: function (result) {
+                        alert("Accepted");
+                        $("#"+ids).parent().html("Accepted");
+                    },
+                    error: function (xhr, status, error) {
+                        console.log(error);
+                    }
+                });
+            })); 
+})
+</script>
+</div></div></span>
+		
+	</div>
+	</div> 
+
+
+
+<script type="text/javascript">
+
+var loadtxt ='<p class="loadingcss">Please Wait Data is Loading ...</p>';
+$(document).ready(function(){
+	$("#loadtxtdata").html(loadtxt)
+	 $("#loadtxtdata").load("filing/dashboardfiling_ajax.php?loadtype=TotalNoofCasesTillData", function(responseTxt, statusTxt, xhr){
+		if(statusTxt == "success"){
+			//alert("External content loaded successfully!");
+		}
+		if(statusTxt == "error"){
+			alert("Error: " + xhr.status + ": " + xhr.statusText);
+		}
+	}); 
+});
+$("#totalNoofCasesClick").click(function(){
+	$("#loadtxtdata").html(loadtxt)
+	$("#loadtxtdata").load("filing/dashboardfiling_ajax.php?loadtype=TotalNoofCasesTillData", function(responseTxt, statusTxt, xhr){
+		if(statusTxt == "success"){
+			//alert("External content loaded successfully!");
+		}
+		if(statusTxt == "error"){
+			alert("Error: " + xhr.status + ": " + xhr.statusText);
+		}
+	}); 
+});
+$("#TotalNoOfPendingCasesClick").click(function(){
+	$("#loadtxtdata").html(loadtxt)
+	$("#loadtxtdata").load("filing/dashboardfiling_ajax.php?loadtype=TotalNoofPendingCasesTillData", function(responseTxt, statusTxt, xhr){
+		if(statusTxt == "success"){
+			//alert("External content loaded successfully!");
+		}
+		if(statusTxt == "error"){
+			alert("Error: " + xhr.status + ": " + xhr.statusText);
+		}
+	});
+});
+$("#TotalNoOfDisposedClick").click(function(){
+	$("#loadtxtdata").html(loadtxt)
+	$("#loadtxtdata").load("filing/dashboardfiling_ajax.php?loadtype=TotalNoofDisposedCasesTillData", function(responseTxt, statusTxt, xhr){
+		if(statusTxt == "success"){
+			//alert("External content loaded successfully!");
+		}
+		if(statusTxt == "error"){
+			alert("Error: " + xhr.status + ": " + xhr.statusText);
+		}
+	});
+});
+$("#TotalNoOfTodayClick").click(function(){
+	$("#loadtxtdata").html(loadtxt)
+	$("#loadtxtdata").load("filing/dashboardfiling_ajax.php?loadtype=TotalNoofTodaysCasesTillData", function(responseTxt, statusTxt, xhr){
+		if(statusTxt == "success"){
+			//alert("External content loaded successfully!");
+		}
+		if(statusTxt == "error"){
+			alert("Error: " + xhr.status + ": " + xhr.statusText);
+		}
+	});
+});
+$("#TotalNoOfTodayClickother").click(function(){
+	$("#loadtxtdata").html(loadtxt)
+	$("#loadtxtdata").load("filing/dashboardfiling_ajax.php?loadtype=TotalOtheronlinefilingData", function(responseTxt, statusTxt, xhr){
+		if(statusTxt == "success"){
+			//alert("External content loaded successfully!");
+		}
+		if(statusTxt == "error"){
+			alert("Error: " + xhr.status + ": " + xhr.statusText);
+		}
+	});
+});
+															
+</script>
+<!--Script For animated Gridview -->
+<script type="text/javascript">
+$('#totalNoofCasesClick').click(function() {
+    $('#totalNoofCasesDiv').toggle('slow', function() {
+        //Animation complete.
+    });
+});
+
+$('#TotalNoOfPendingCasesClick').click(function() {
+    $('#TotalNoOfPendingCasesDiv').toggle('slow', function() {
+        // Animation complete.
+    });
+});
+
+$('#TotalNoOfDisposedClick').click(function() {
+    $('#TotalNoOfDisposedDiv').toggle('slow', function() {
+        // Animation complete.
+    });
+});
+
+$('#TotalNoOfTodayClick').click(function() {
+    $('#TotalNoOfTodayDiv').toggle('slow', function() {
+        // Animation complete.
+    });
+});
+$('#TotalNoOfTodayClickother').click(function() {
+    $('#TotalNoOfTodayDivother').toggle('slow', function() {
+        // Animation complete.
+    });
+});
+</script>
+	
+  <!-- End of Menuaccess_codeall_1-->
+	  
+ 
+
+ 
+	
+   	       
+
+
+
+  	
+<script src="../assets/plugins/bootstrap-datepicker/js/bootstrap-datepicker.min.js"></script>
+	<script>
+	$('.datepickerTillToday').datepicker({
+	format: "dd/mm/yyyy",
+	endDate: '-0d',
+	autoclose: true,
+    todayHighlight: true
+	});
+	</script>
+	<script>
+	$('.datepickerFromToday').datepicker({
+	format: "dd/mm/yyyy",
+	startDate: '-0d',
+	autoclose: true,
+    todayHighlight: true
+	});
+	</script>
+
+	<script>
+	$('.datepickerDash').datepicker({
+	format: "dd-mm-yyyy",
+	autoclose: true,
+    todayHighlight: true
+	});
+	</script>
+	<script>
+	$('.datepicker').datepicker({
+	format: "dd/mm/yyyy",
+	autoclose: true,
+    todayHighlight: true
+	});
+	</script>
+
+<script>
+  $(document).ready(function () {
+    const today = new Date();
+
+    // First day of last month
+    const startDate = new Date(today.getFullYear(), today.getMonth() - 1, 1);
+
+    // Last day of current month
+    const endDate = new Date(today.getFullYear(), today.getMonth() + 1, 0);
+
+    $('.caseDate').datepicker({
+      format: "dd/mm/yyyy",
+      autoclose: true,
+      todayHighlight: true,
+      startDate: startDate,
+      endDate: endDate
+    });
+  });
+</script>
+
+	
+
+
+
+
+		<script>
+	$('.datepickeryearwise').datepicker({
+	format: "yyyy",
+	autoclose: true,
+    todayHighlight: true
+	});
+	</script>
+	
+	<script>
+$(window).scroll(function() {
+  sessionStorage.scrollTop = $(this).scrollTop();
+});
+
+$(document).ready(function() {
+  if (sessionStorage.scrollTop != "undefined") {
+    $(window).scrollTop(sessionStorage.scrollTop);
+  }
+});
+
+function myFunction(){
+	$("form").submit();
+}
+	</script>
+	  	    </div>
+    
+    <footer>
+        <div class="row flink">
+            <div class="col-md-6">
+
+            </div>
+            <div class="col-md-6 text-right">
+                           <a href="./Disclaimer.pdf" target="_blank" style="border-left:none;">Disclaimer</a>
+
+                        <a href="#">Contact us</a>
+                        <a href="#">Department Of Financial Services Link</a>
+                       
+            </div>
+
+        </div>
+        <div class="row bg-black">
+            <p class="text-white text-center mar-center pt-2">
+                
+                    © Copyright 2015 E-Drt . All Rights Reserved.<br>
+                    National Informatics Center(NIC)
+            </p>
+        </div>
+    </footer>
+ 
+
+</body></html>

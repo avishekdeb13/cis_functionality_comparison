@@ -1,0 +1,17 @@
+[
+  {
+    "url": "https://cis.drt.gov.in/drtlive/index.php",
+    "username": "filingdrt1",
+    "password": "",
+    "captcha_wait": 90,
+    "login_indicator": "",
+    "nav_mode": "Bootstrap navbar (nav.navbar > ul.navbar-nav)",
+    "output_dir": "test",
+    "prefix": ".csv",
+    "run_tests": true,
+    "test_pause": 0,
+    "skip_no_url": false,
+    "headless": true,
+    "page_timeout": 6
+  }
+]

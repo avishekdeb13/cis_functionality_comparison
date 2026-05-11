@@ -1,0 +1,57 @@
+Main Menu,Sub Menu,URL
+Home,,https://cis.drt.gov.in/drtlive/index.php
+Application in DRT,Original Application,https://cis.drt.gov.in/drtlive/filing/oa.php
+Application in DRT,Securitisation Application,https://cis.drt.gov.in/drtlive/filing/sa.php
+Application in DRT,Add Property Details,https://cis.drt.gov.in/drtlive/filing/add_propertyDetails.php
+Application in DRT,Add Guarantor Details,https://cis.drt.gov.in/drtlive/filing/addguarantor.php
+Application in DRT,Additional Party,https://cis.drt.gov.in/drtlive/filing/ap.php
+Application in DRT,Additional Address,https://cis.drt.gov.in/drtlive/filing/aa.php
+Application in DRT,Additional Advocate,https://cis.drt.gov.in/drtlive/filing/additional_advocate.php
+Application in DRT,Change Advocate,https://cis.drt.gov.in/drtlive/filing/additional_advocate_change.php
+Application in DRT,Other Filing,https://cis.drt.gov.in/drtlive/filing/other_filing.php
+Application in DRT,IA (in OA/SA/RC/TRC),https://cis.drt.gov.in/drtlive/filing/ia.php
+Application in DRT,RA/IA/MA/Appeal Against RC/TRC,https://cis.drt.gov.in/drtlive/filing/rc_trc.php
+Application in DRT,Case Filing(Other than DRT),https://cis.drt.gov.in/drtlive/filing/ex_filing.php
+Application in DRT,Transfer Cases List(Till 3-Nov-2022),https://cis.drt.gov.in/drtlive/filing/tran_case_drt_old.php
+Application in DRT,Transfer Cases List,https://cis.drt.gov.in/drtlive/filing/tran_case_drt.php
+Application in DRT,Transfer RC Cases List,https://cis.drt.gov.in/drtlive/filing/tref_rc_case.php
+Other Application,Certified Copy,https://cis.drt.gov.in/drtlive/filing/accd.php
+Other Application,Caveat Filing,https://cis.drt.gov.in/drtlive/filing/fc.php
+Other Application,Add Caveat Additional Party,https://cis.drt.gov.in/drtlive/filing/caveat_additional.php
+Other Application,Legal Heirs,https://cis.drt.gov.in/drtlive/filing/legal.php
+Other Application,Evidence Filing,https://cis.drt.gov.in/drtlive/filing/ef.php
+Other Application,Counter Claim,https://cis.drt.gov.in/drtlive/filing/counterfiling.php
+Other Application,Change Bank To ARC and ARC To Bank,https://cis.drt.gov.in/drtlive/filing/banktoarc.php
+Other Application,Change Case Type,https://cis.drt.gov.in/drtlive/filing/casetypechang.php
+Other Application,RC/TRC Review,https://cis.drt.gov.in/drtlive/filing/review_rctrc.php
+Document Details,Document Filing,https://cis.drt.gov.in/drtlive/filing/doc.php
+Document Details,Document View,https://cis.drt.gov.in/drtlive/filing/doc_view.php
+Document Details,RC Document View,https://cis.drt.gov.in/drtlive/filing/rc_doc_view.php
+Document Details,Date Wise View Document Online,https://cis.drt.gov.in/drtlive/filing/online_date_doc_view.php
+Document Details,Date Wise View Document Offline,https://cis.drt.gov.in/drtlive/filing/offline_date_doc_view.php
+*Legacy Data,,
+Backlog,Backlog Filing,https://cis.drt.gov.in/drtlive/filing/backlog.php
+Backlog,Modify OA/SA Pending Case Only,https://cis.drt.gov.in/drtlive/filing/backlog_modify.php
+Backlog,Party Name Modify,https://cis.drt.gov.in/drtlive/filing/party_res_name_update.php
+Backlog,Bank Merged,https://cis.drt.gov.in/drtlive/filing/bankmerged.php
+Backlog,Modify OA/SA Disposal Case Only,https://cis.drt.gov.in/drtlive/filing/backlog_modify_disposal.php
+Backlog,Modify Caveat Filing,https://cis.drt.gov.in/drtlive/filing/caveat_modify.php
+Backlog,Backlog (Old Dairy no wise),https://cis.drt.gov.in/drtlive/listing/backlog.php
+Backlog,IA Filing (Backlog),https://cis.drt.gov.in/drtlive/listing/ia.php
+Backlog,MA/RA/EX/Appeal Backlog,https://cis.drt.gov.in/drtlive/listing/ma_backlog.php
+Backlog,Backlog Case Filing(Other than DRT),https://cis.drt.gov.in/drtlive/filing/ex_filingbacklog.php
+Payment Details,Add DD/IPO/Bharat Kosh,https://cis.drt.gov.in/drtlive/filing/paymentmore.php
+Payment Details,DD/IPO Modify,https://cis.drt.gov.in/drtlive/filing/courtFeeModify.php
+Payment Details,Update Suit Aomunt,https://cis.drt.gov.in/drtlive/filing/updateSuit.php
+Payment Details,Partial Loan Payment During OA/SA,https://cis.drt.gov.in/drtlive/rc/partial_loan_payment.php
+Payment Details,Verify Bharat Kosh Transaction Id,https://cis.drt.gov.in/drtlive/filing/checkbhartkosh.php?filingNo=1111
+Report,Filing Report,https://cis.drt.gov.in/drtlive/filing/oaReport.php
+Report,All Filing Report,https://cis.drt.gov.in/drtlive/filing/AllFilingReport.php
+Report,IA Report,https://cis.drt.gov.in/drtlive/filing/iaReport.php
+Report,Caveat Report,https://cis.drt.gov.in/drtlive/filing/caveat_search.php
+Report,Property Report,https://cis.drt.gov.in/drtlive/filing/property_report.php
+Report,Certified Copy,https://cis.drt.gov.in/drtlive/filing/ccReport.php
+Report,Bharat Kosh Payment Report,https://cis.drt.gov.in/drtlive/filing/bhartkoshReport.php
+Report,With Fee & Wihtout Fee Report,https://cis.drt.gov.in/drtlive/filing/fee_tracking.php
+Change Password,,https://cis.drt.gov.in/drtlive/reg/change_password.php
+Logout,,https://cis.drt.gov.in/drtlive/logout1.php
