@@ -1,0 +1,9 @@
+  File "C:\Users\FQ932KZ\AppData\Local\Programs\Python\Python314\Lib\site-packages\webdriver_manager\core\driver.py", line 48, in get_driver_version_to_download
+    return self.get_latest_release_version()
+           ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^
+  File "C:\Users\FQ932KZ\AppData\Local\Programs\Python\Python314\Lib\site-packages\webdriver_manager\drivers\chrome.py", line 59, in get_latest_release_version
+    response = self._http_client.get(url)
+  File "C:\Users\FQ932KZ\AppData\Local\Programs\Python\Python314\Lib\site-packages\webdriver_manager\core\http.py", line 35, in get
+    raise exceptions.ConnectionError(f"Could not reach host. Are you offline?")
+requests.exceptions.ConnectionError: Could not reach host. Are you offline?
+PS C:\Users\FQ932KZ\OneDrive - EY\Desktop\auto_testing> 
