@@ -1,0 +1,54 @@
+﻿Main Menu,Sub Menu,URL
+Dashboard,,https://drt.etribunals.gov.in/cis2.0/filing/dashboard
+Application in DRT,Add Property Details,https://drt.etribunals.gov.in/cis2.0/filing/add-property-details
+Application in DRT,Add Guarantor Details,https://drt.etribunals.gov.in/cis2.0/filing/add-guarantor
+Application in DRT,Additional Party,https://drt.etribunals.gov.in/cis2.0/filing/additional-party
+Application in DRT,Additional Address,https://drt.etribunals.gov.in/cis2.0/filing/additional-address
+Application in DRT,Additional Advocate,https://drt.etribunals.gov.in/cis2.0/filing/additional-advocate
+Application in DRT,Change Advocate,https://drt.etribunals.gov.in/cis2.0/filing/change-advocate
+Application in DRT,IA (in OA/SA/RC/TRC),https://drt.etribunals.gov.in/cis2.0/filing/ia
+Application in DRT,RA/IA/MA/Appeal Against RC/TRC,https://drt.etribunals.gov.in/cis2.0/filing/rc-trc
+Application in DRT,Case Filing(Other than DRT),https://drt.etribunals.gov.in/cis2.0/filing/other-filing
+Application in DRT,Transfer Cases List,https://drt.etribunals.gov.in/cis2.0/filing/transfer-case
+Application in DRT,Transfer RC Cases List,https://drt.etribunals.gov.in/cis2.0/filing/transfer-rc-case
+Other Application,Certified Copy,https://drt.etribunals.gov.in/cis2.0/filing/certified-copy
+Other Application,Caveat Filing,https://drt.etribunals.gov.in/cis2.0/filing/caveat-filing
+Other Application,Add Caveat Additional Party,https://drt.etribunals.gov.in/cis2.0/filing/add-caveat-additional-party
+Other Application,Legal Heirs,https://drt.etribunals.gov.in/cis2.0/filing/legal-heirs
+Other Application,Evidence Filing,https://drt.etribunals.gov.in/cis2.0/filing/evidence-filing
+Other Application,Counter Claim,https://drt.etribunals.gov.in/cis2.0/filing/counter-claim
+Other Application,Change Bank To ARC and ARC To Bank,https://drt.etribunals.gov.in/cis2.0/filing/change-banktoarc
+Other Application,Change Case Type,https://drt.etribunals.gov.in/cis2.0/filing/change-case-type
+Other Application,RC/TRC Review,https://drt.etribunals.gov.in/cis2.0/filing/review-rctrc
+Document Detail,Document View,https://drt.etribunals.gov.in/cis2.0/filing/doc-view
+Document Detail,RC/TRC Document View,https://drt.etribunals.gov.in/cis2.0/filing/rc-doc-view
+Document Detail,Date Wise View Document,https://drt.etribunals.gov.in/cis2.0/filing/deatewise-doc-view
+Legacy Data,Applicant & Defendanf Name Update,https://drt.etribunals.gov.in/cis2.0/legacydata/update-res-pet-name
+Legacy Data,Reg. Date Not Available,https://drt.etribunals.gov.in/cis2.0/legacydata/update-regis-date
+Legacy Data,Filing/Reg./Disposal Date Update,https://drt.etribunals.gov.in/cis2.0/legacydata/update-case-date
+Legacy Data,State & District Not Available,https://drt.etribunals.gov.in/cis2.0/legacydata/update-state-district
+Legacy Data,Check Case Pending OR Disposal,https://drt.etribunals.gov.in/cis2.0/legacydata/update-case-status
+Legacy Data,TRC Case Party Name Update,https://drt.etribunals.gov.in/cis2.0/legacydata/update-trc-pet-res-name
+Legacy Data,IA Transfer Status,https://drt.etribunals.gov.in/cis2.0/legacydata/ia-transfer-status
+Backlog,Backlog Filing,https://drt.etribunals.gov.in/cis2.0/filing/backlog
+Backlog,Modify OA/SA Pending Case Only,https://drt.etribunals.gov.in/cis2.0/filing/backlog_modify
+Backlog,Party Name Modify,https://drt.etribunals.gov.in/cis2.0/filing/modify-party-name
+Backlog,Bank Merged,https://drt.etribunals.gov.in/cis2.0/filing/bankmerged
+Backlog,Modify OA/SA Disposal Case Only,https://drt.etribunals.gov.in/cis2.0/filing/backlog_modify_disposal
+Backlog,Modify Caveat Filing,https://drt.etribunals.gov.in/cis2.0/filing/caveat_modify
+Backlog,Backlog (Old Dairy no wise),https://drt.etribunals.gov.in/cis2.0/listing/backlog
+Backlog,IA Filing (Backlog),https://drt.etribunals.gov.in/cis2.0/listing/ia
+Backlog,MA/RA/EX/Appeal Backlog,https://drt.etribunals.gov.in/cis2.0/listing/ma_backlog
+Backlog,Backlog Case Filing(Other than DRT),https://drt.etribunals.gov.in/cis2.0/filing/ex_filingbacklog
+Payment Details,Add DD/IPO/Bharat Kosh,https://drt.etribunals.gov.in/cis2.0/filing/add-more-payment
+Payment Details,DD/IPO Modify,https://drt.etribunals.gov.in/cis2.0/filing/modify-court-fee
+Payment Details,Update Suit Amount,https://drt.etribunals.gov.in/cis2.0/filing/update-suit-amount
+Payment Details,Partial Loan Payment During OA/SA,https://drt.etribunals.gov.in/cis2.0/filing/partial-loan-payment
+Payment Details,Verify Bharat Kosh Transaction Id,https://drt.etribunals.gov.in/cis2.0/filing/check-bhartkosh-payment
+Report,Filing Report,https://drt.etribunals.gov.in/cis2.0/filing/report
+Report,IA Report,https://drt.etribunals.gov.in/cis2.0/filing/ia-report
+Report,Caveat Report,https://drt.etribunals.gov.in/cis2.0/filing/caveat-report
+Report,Property Report,https://drt.etribunals.gov.in/cis2.0/filing/property-report
+Report,Certified Copy,https://drt.etribunals.gov.in/cis2.0/filing/certified-copy-report
+Report,Bharat Kosh Payment Report,https://drt.etribunals.gov.in/cis2.0/filing/bhartkosh-report
+Report,With Fee & Wihtout Fee Report,https://drt.etribunals.gov.in/cis2.0/filing/fee-tracking
