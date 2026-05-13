@@ -1,5 +1,34 @@
-1	application in drt > add guarantor details	LIVE	OK	404 Not Found
-2	application in drt > add guarantor details	TEST	OK	DEBTS RECOVERY TRIBUNALS (DRTs)
-3	application in drt > add property details	LIVE	OK	404 Not Found
-4	application in drt > add property details	TEST	OK	DEBTS RECOVERY TRIBUNALS (DRTs)
-5	application in drt > additional address	LIVE	OK	404 Not Found
+def get_menu_readonly(driver, portal_cfg, html_path=None):
+    print("\n[MENU] Extracting menu from:", portal_cfg["label"])
+    print("       Base URL:", portal_cfg["base"])
+    
+    driver.execute_script("""
+        document.querySelectorAll('.collapse').forEach(el =>
+            el.classList.add('show'));
+        document.querySelectorAll('[aria-expanded]').forEach(el =>
+            el.setAttribute('aria-expanded', 'true'));
+        document.querySelectorAll('.dropdown-menu').forEach(el => {
+            el.classList.add('show');
+            el.style.display = 'block';
+        });
+    """)
+    time.sleep(2)
+
+    html = driver.page_source
+    if html_path:
+        with open(html_path, "w", encoding="utf-8") as f:
+            f.write(html)
+
+    rows = parse_menu_from_html(html, portal_cfg["base"])
+    
+    # DEBUG: print first 5 raw URLs to see what we're getting
+    print("\n       DEBUG - First 5 raw menu items:")
+    for r in rows[:5]:
+        print("         main:", r["main"])
+        print("         sub :", r["sub"])
+        print("         href:", r["href"])
+        print("         url :", r["url"])
+        print()
+    
+    print("       Menu items found:", len(rows))
+    return rows
