@@ -1,0 +1,1402 @@
+"""
+Portal Functional Comparison Tool v5.0
+=======================================
+KEY RULES (hard-coded, never violated):
+  1. ZERO driver.back() — every page reached by direct driver.get(url) only
+  2. ZERO pixel comparison — functional content only
+  3. SKIP dangerous pages (logout, download, pdf links) before visiting
+  4. Auto crash-recovery — if Chrome dies, restart + re-login + continue
+  5. LIVE portal — read HTML only, zero interaction
+  6. TEST portal — light dropdown selection only, no form submission
+
+Install:
+  uv pip install selenium webdriver-manager openpyxl beautifulsoup4
+
+Run:
+  python portal_compare_v3.py
+"""
+
+import os, re, time, glob, shutil
+from datetime import datetime
+from urllib.parse import urlparse, urljoin
+
+from bs4 import BeautifulSoup
+
+from selenium import webdriver
+from selenium.webdriver.common.by import By
+from selenium.webdriver.support.ui import WebDriverWait, Select as SeleniumSelect
+from selenium.webdriver.chrome.service import Service
+from selenium.common.exceptions import (
+    TimeoutException, NoSuchElementException, WebDriverException,
+    InvalidSessionIdException, UnexpectedAlertPresentException)
+
+from openpyxl import Workbook
+from openpyxl.styles import PatternFill, Font, Alignment, Border, Side
+from openpyxl.utils import get_column_letter
+
+# ─────────────────────────────────────────────────────────────────────────────
+#  PAGES TO ALWAYS SKIP  (would kill session or cause side effects)
+# ─────────────────────────────────────────────────────────────────────────────
+SKIP_KEYWORDS = [
+    "logout", "log-out", "log_out", "signout", "sign-out",
+    "download", "export", "print", "pdf", "report/generate",
+]
+
+def should_skip(url, label):
+    """Return True if this URL should never be visited."""
+    url_l   = url.lower()
+    label_l = label.lower()
+    for kw in SKIP_KEYWORDS:
+        if kw in url_l or kw in label_l:
+            return True
+    return False
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+#  EXCEL STYLE HELPERS
+# ─────────────────────────────────────────────────────────────────────────────
+def xfill(c):   return PatternFill("solid", fgColor=c)
+def xfnt(bold=False, color="FF000000", sz=10):
+    return Font(bold=bold, color=color, size=sz)
+def xbrd():
+    s = Side(style="thin", color="FFD0D0D0")
+    return Border(left=s, right=s, top=s, bottom=s)
+def xaln(h="left"):
+    return Alignment(horizontal=h, vertical="center", wrap_text=True)
+def hdr(ws, row, col, text, bg="FF003366", fg="FFFFFFFF", sz=11, w=None):
+    c = ws.cell(row, col, text)
+    c.fill = xfill(bg); c.font = xfnt(True, fg, sz)
+    c.alignment = xaln("center"); c.border = xbrd()
+    if w:
+        ws.column_dimensions[get_column_letter(col)].width = w
+    return c
+def dat(ws, row, col, val, bg="FFFFFFFF", bold=False, color="FF000000"):
+    c = ws.cell(row, col, val)
+    c.fill = xfill(bg); c.font = xfnt(bold, color)
+    c.alignment = xaln(); c.border = xbrd()
+    return c
+
+STATUS_CLR = {
+    "MATCH":           ("FFE8F5E9", "FF1B5E20"),
+    "MISSING IN TEST": ("FFFFEBEE", "FFB71C1C"),
+    "EXTRA IN TEST":   ("FFFFF8E1", "FFF57F17"),
+    "MISMATCH":        ("FFFFE0B2", "FFE65100"),
+    "COLUMNS DIFFER":  ("FFFFE0B2", "FFE65100"),
+    "OK":              ("FFE8F5E9", "FF1B5E20"),
+    "SKIPPED":         ("FFF5F5F5", "FF9E9E9E"),
+    "NOT IN LIVE":     ("FFF3E5F5", "FF6A1B9A"),
+    "NOT IN TEST":     ("FFF3E5F5", "FF6A1B9A"),
+    "TIMEOUT":         ("FFFFF8E1", "FFF57F17"),
+    "CRASHED":         ("FFFFEBEE", "FFB71C1C"),
+    "ERROR":           ("FFFFEBEE", "FFB71C1C"),
+    "NO URL":          ("FFF5F5F5", "FF9E9E9E"),
+}
+def st_cell(ws, row, col, status):
+    bg, fg = STATUS_CLR.get(status, ("FFFFFFFF", "FF000000"))
+    c = ws.cell(row, col, status)
+    c.fill = xfill(bg); c.font = xfnt(True, fg, 10)
+    c.alignment = xaln("center"); c.border = xbrd()
+def rbg(ri): return "FFFAFAFA" if ri % 2 == 0 else "FFFFFFFF"
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+#  GUI
+# ─────────────────────────────────────────────────────────────────────────────
+def get_config():
+    import tkinter as tk
+    from tkinter import ttk, messagebox
+    config = {}
+
+    def submit():
+        lu = live_url.get().strip()
+        tu = test_url.get().strip()
+        if not lu or not tu:
+            messagebox.showerror("Error", "Both URLs required"); return
+        if not live_user.get().strip() or not live_pwd.get().strip():
+            messagebox.showerror("Error", "Live credentials required"); return
+        if not test_user.get().strip() or not test_pwd.get().strip():
+            messagebox.showerror("Error", "Test credentials required"); return
+
+        def base(url):
+            p = urlparse(url)
+            return p.scheme + "://" + p.netloc
+
+        ts     = datetime.now().strftime("%Y%m%d_%H%M%S")
+        folder = (test_user.get().strip() or "test") + "_" + ts
+        os.makedirs(folder, exist_ok=True)
+
+        config["live"] = {
+            "url": lu, "username": live_user.get().strip(),
+            "password": live_pwd.get().strip(),
+            "base": base(lu), "label": "LIVE",
+        }
+        config["live"] = {
+            "url": lu, "username": live_user.get().strip(),
+            "password": live_pwd.get().strip(),
+            "base": "https://cis.drt.gov.in/drtlive",
+            "label": "LIVE",
+            }
+        config["test"] = {
+            "url": tu, "username": test_user.get().strip(),
+            "password": test_pwd.get().strip(),
+            "base": base(tu), "label": "TEST",
+            "folder":   folder,
+            "live_html": os.path.join(folder, "live_portal.html"),
+            "test_html": os.path.join(folder, "test_portal.html"),
+            "excel":     os.path.join(folder, "comparison.xlsx"),
+        }
+        config["options"] = {
+            "page_timeout": int(timeout_var.get()),
+            "captcha_wait": int(captcha_var.get()),
+            "interact":     not skip_var.get(),
+        }
+        root.destroy()
+
+    root = tk.Tk()
+    root.title("Portal Comparison Tool v5.0")
+    root.geometry("680x500")
+    root.resizable(False, False)
+
+    tk.Label(root, text="Portal Comparison Tool v5.0",
+             font=("Arial", 14, "bold"), fg="#003366").pack(pady=8)
+    tk.Label(root,
+             text="Compares fields · tables · columns — no pixel diff — URL-only navigation",
+             font=("Arial", 9), fg="#555").pack()
+
+    nb = ttk.Notebook(root)
+    nb.pack(fill="both", expand=True, padx=10, pady=8)
+
+    def portal_tab(title, color, note, url_default, user_default=""):
+        tab = ttk.Frame(nb, padding=15)
+        nb.add(tab, text=title)
+        tk.Label(tab, text=note, font=("Arial", 10, "bold"),
+                 fg=color).grid(row=0, column=0, columnspan=2,
+                                pady=(0, 12), sticky="w")
+        u = tk.StringVar(value=url_default)
+        n = tk.StringVar(value=user_default)
+        p = tk.StringVar()
+        for ri, (lbl, var, show) in enumerate([
+            ("Portal URL:", u, ""), ("Username:", n, ""), ("Password:", p, "*")
+        ], 1):
+            ttk.Label(tab, text=lbl).grid(row=ri, column=0, sticky="w", pady=8)
+            ttk.Entry(tab, textvariable=var, show=show, width=56).grid(
+                row=ri, column=1, padx=8)
+        return u, n, p
+
+    live_url, live_user, live_pwd = portal_tab(
+        "  LIVE Portal (Read-Only)  ", "#cc0000",
+        "READ-ONLY — nothing submitted, no interaction",
+        "https://cis.drt.gov.in/drtlive/index.php", "filingdrt1")
+
+    test_url, test_user, test_pwd = portal_tab(
+        "  TEST Portal (Full Test)  ", "#006600",
+        "FULL TEST — dropdown selection only, no form submit",
+        "https://drt.etribunals.gov.in/cis2.0/filing/login")
+
+    t3 = ttk.Frame(nb, padding=15)
+    nb.add(t3, text="  Options  ")
+    timeout_var = tk.StringVar(value="15")
+    captcha_var = tk.StringVar(value="90")
+    skip_var    = tk.BooleanVar(value=False)
+    for ri, (lbl, var, hint) in enumerate([
+        ("Page timeout (sec):", timeout_var, "Max wait per page"),
+        ("CAPTCHA wait (sec):", captcha_var, "Time to solve CAPTCHA + login"),
+    ], 1):
+        ttk.Label(t3, text=lbl).grid(row=ri, column=0, sticky="w", pady=8)
+        ttk.Entry(t3, textvariable=var, width=10).grid(
+            row=ri, column=1, sticky="w", padx=8)
+        ttk.Label(t3, text=hint, foreground="#888",
+                  font=("Arial", 9)).grid(row=ri, column=2, sticky="w")
+    ttk.Checkbutton(t3, text="Skip dropdown interaction on TEST",
+                    variable=skip_var).grid(
+        row=3, column=0, columnspan=3, pady=12, sticky="w")
+
+    ttk.Button(root, text="Start Comparison",
+               command=submit).pack(pady=8)
+    root.mainloop()
+    return config
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+#  CHROME DRIVER  — offline-safe, tries 3 methods
+# ─────────────────────────────────────────────────────────────────────────────
+def find_local_chromedriver():
+    """Find chromedriver already on this machine without downloading."""
+    script_dir = os.path.dirname(os.path.abspath(__file__))
+    for name in ["chromedriver.exe", "chromedriver"]:
+        p = os.path.join(script_dir, name)
+        if os.path.exists(p):
+            return p
+    found = shutil.which("chromedriver") or shutil.which("chromedriver.exe")
+    if found:
+        return found
+    for pattern in [
+        r"C:\Users\*\.wdm\drivers\chromedriver\*\*\chromedriver.exe",
+        r"C:\Program Files\Google\Chrome\Application\chromedriver.exe",
+        "/usr/local/bin/chromedriver", "/usr/bin/chromedriver",
+    ]:
+        hits = glob.glob(pattern, recursive=True)
+        if hits:
+            return hits[0]
+    return None
+
+
+def make_chrome_options():
+    """Chrome options that prevent download-triggered crashes."""
+    opts = webdriver.ChromeOptions()
+    opts.add_argument("--start-maximized")
+    opts.add_argument("--disable-blink-features=AutomationControlled")
+    opts.add_argument("--disable-popup-blocking")
+    opts.add_argument("--disable-notifications")
+    opts.add_argument("--disable-extensions")
+    opts.add_experimental_option("excludeSwitches", ["enable-automation"])
+    opts.add_experimental_option("useAutomationExtension", False)
+    # Redirect downloads to a temp folder — prevents dialog crashes
+    dl_dir = os.path.join(os.path.expanduser("~"), "Downloads", "drt_auto_blocked")
+    os.makedirs(dl_dir, exist_ok=True)
+    opts.add_experimental_option("prefs", {
+        "download.default_directory":         dl_dir,
+        "download.prompt_for_download":       False,
+        "plugins.always_open_pdf_externally": True,
+        "safebrowsing.enabled":               True,
+        "profile.default_content_settings.popups": 0,
+    })
+    return opts
+
+
+def init_driver():
+    opts = make_chrome_options()
+
+    # Method 1: webdriver-manager (needs internet)
+    try:
+        from webdriver_manager.chrome import ChromeDriverManager
+        d = webdriver.Chrome(
+            service=Service(ChromeDriverManager().install()), options=opts)
+        print("  [Driver] webdriver-manager OK")
+        return d
+    except Exception as e:
+        print(f"  [Driver] webdriver-manager failed: {str(e)[:70]}")
+
+    # Method 2: local chromedriver already on machine
+    cdpath = find_local_chromedriver()
+    if cdpath:
+        try:
+            d = webdriver.Chrome(service=Service(cdpath), options=opts)
+            print(f"  [Driver] Local driver: {cdpath}")
+            return d
+        except Exception as e:
+            print(f"  [Driver] Local driver error: {e}")
+
+    # Method 3: Selenium 4.6+ auto-detect
+    try:
+        d = webdriver.Chrome(options=opts)
+        print("  [Driver] Selenium auto-detect OK")
+        return d
+    except Exception as e:
+        print(f"  [Driver] Auto-detect failed: {e}")
+
+    raise RuntimeError(
+        "\n  ChromeDriver not found.\n"
+        "  Download chromedriver.exe from:\n"
+        "  https://googlechromelabs.github.io/chrome-for-testing/\n"
+        "  Place it in the same folder as this .py file and retry.\n")
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+#  SESSION HEALTH
+# ─────────────────────────────────────────────────────────────────────────────
+def session_alive(driver):
+    try:
+        _ = driver.current_url
+        return True
+    except Exception:
+        return False
+
+
+def safe_dismiss_alerts(driver):
+    """Dismiss any JS alert and close extra tabs opened by the page."""
+    try:
+        driver.switch_to.alert.dismiss()
+        time.sleep(0.2)
+    except Exception:
+        pass
+    try:
+        handles = driver.window_handles
+        if len(handles) > 1:
+            for h in handles[1:]:
+                driver.switch_to.window(h)
+                driver.close()
+            driver.switch_to.window(handles[0])
+    except Exception:
+        pass
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+#  LOGIN  — always by direct URL, never back()
+# ─────────────────────────────────────────────────────────────────────────────
+USER_LOCS = [
+    (By.ID,    "user_name"),    (By.ID,    "username"),
+    (By.NAME,  "user_name"),    (By.NAME,  "username"),
+    (By.NAME,  "txtUsername"),  (By.ID,    "txtUsername"),
+    (By.XPATH, "//input[@formcontrolname='username']"),
+    (By.XPATH, "//input[@formcontrolname='user_name']"),
+    (By.XPATH, "//input[@formcontrolname='loginId']"),
+    (By.XPATH, "//input[@type='text' and not(@readonly) and not(@disabled)]"),
+    (By.XPATH, "//input[contains(translate(@placeholder,'ABCDEFGHIJKLMNOPQRSTUVWXYZ',"
+               "'abcdefghijklmnopqrstuvwxyz'),'user')]"),
+]
+PASS_LOCS = [
+    (By.ID,    "user_pass"),    (By.ID,    "password"),
+    (By.NAME,  "user_pass"),    (By.NAME,  "password"),
+    (By.NAME,  "txtPassword"),  (By.ID,    "txtPassword"),
+    (By.XPATH, "//input[@formcontrolname='password']"),
+    (By.XPATH, "//input[@formcontrolname='userPass']"),
+    (By.XPATH, "//input[@type='password']"),
+]
+
+def login(driver, pcfg, captcha_wait):
+    """Navigate directly to login URL, fill credentials, wait for CAPTCHA."""
+    print(f"\n{'='*58}")
+    print(f"  LOGIN: {pcfg['label']}  —  {pcfg['url']}")
+    print(f"{'='*58}")
+
+    # Always navigate directly to the login URL — never use back()
+    driver.get(pcfg["url"])
+
+    # Wait for any input to appear (Angular may take a moment)
+    try:
+        WebDriverWait(driver, 10).until(
+            lambda d: len(d.find_elements(By.CSS_SELECTOR, "input")) > 0)
+    except TimeoutException:
+        pass
+    time.sleep(1.5)
+
+    # If already on dashboard (session still valid), skip fill
+    cur = driver.current_url.lower()
+    if "login" not in cur and "index" not in cur:
+        print(f"  Session still active: {driver.current_url}")
+        return driver.current_url
+
+    def fill_field(label, val, locs):
+        for loc in locs:
+            try:
+                for el in driver.find_elements(*loc):
+                    if el.is_displayed() and el.is_enabled():
+                        el.clear()
+                        el.send_keys(val)
+                        print(f"  + {label} filled")
+                        return True
+            except Exception:
+                pass
+        print(f"  ! {label} not found — fill manually")
+        return False
+
+    fill_field("Username", pcfg["username"], USER_LOCS)
+    fill_field("Password", pcfg["password"], PASS_LOCS)
+
+    print(f"\n  Solve CAPTCHA then click Login  ({captcha_wait}s)")
+    start = driver.current_url
+    try:
+        WebDriverWait(driver, captcha_wait).until(
+            lambda d: d.current_url != start)
+    except TimeoutException:
+        print("  [!] URL unchanged — continuing anyway")
+    time.sleep(3)
+    safe_dismiss_alerts(driver)
+    print(f"  Logged in: {driver.current_url}")
+    return driver.current_url
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+#  URL UTILITIES
+# ─────────────────────────────────────────────────────────────────────────────
+def fix_live_url(url, portal_label=""):
+    """
+    LIVE portal must always remain under /drtlive/.
+    Fixes wrong URLs like:
+      https://cis.drt.gov.in/filing/add_propertyDetails.php
+    into:
+      https://cis.drt.gov.in/drtlive/filing/add_propertyDetails.php
+    """
+    if portal_label != "LIVE" or not url:
+        return url
+
+    p = urlparse(url)
+
+    # Only apply to LIVE DRT host
+    if p.netloc != "cis.drt.gov.in":
+        return url
+
+    # Already correct
+    if p.path.startswith("/drtlive/") or p.path == "/drtlive":
+        return url
+
+    # Insert /drtlive before the existing path
+    fixed_path = "/drtlive" + p.path
+
+    return p._replace(path=fixed_path).geturl()
+
+
+# def clean_url(href, base):
+#     if not href or not href.strip():
+#         return "", "empty"
+#     href = href.strip()
+#     if href.lower().startswith("javascript") or href in ("#", ""):
+#         return "", "js-link"
+#     if re.search(r"['\",]", href):
+#         clean = re.split(r"['\",]", href)[0].strip()
+#         return ((base + clean, "bug:broken-routerlink")
+#                 if clean.startswith("/") else ("", "bug:broken-href"))
+#     if href.startswith("http"):  return href, ""
+#     if href.startswith("/"):     return base + href, ""
+#     return urljoin(base + "/", href), "relative"
+def clean_url(href, base, portal_label=""):
+    if not href or not href.strip():
+        return "", "empty"
+
+    href = href.strip()
+
+    if href.lower().startswith("javascript") or href in ("#", ""):
+        return "", "js-link"
+
+    if re.search(r"['\",]", href):
+        clean = re.split(r"['\",]", href)[0].strip()
+
+        if clean.startswith("/"):
+            url = base.rstrip("/") + clean
+            url = fix_live_url(url, portal_label)
+            return url, "bug:broken-routerlink"
+
+        return "", "bug:broken-href"
+
+    if href.startswith("http"):
+        url = fix_live_url(href, portal_label)
+        return url, ""
+
+    if href.startswith("/"):
+        url = base.rstrip("/") + href
+        url = fix_live_url(url, portal_label)
+        return url, ""
+
+    # Relative URL like filing/add_propertyDetails.php
+    full = urljoin(base.rstrip("/") + "/", href)
+    full = fix_live_url(full, portal_label)
+
+    return full, "relative"
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+#  MENU PARSER  (Bootstrap navbar + accordionSidebar + fallback)
+# ─────────────────────────────────────────────────────────────────────────────
+def parse_menu(html, base, label=""):
+    soup = BeautifulSoup(html, "html.parser")
+    rows = []
+
+    def row(main, sub, href):
+        url, issue = clean_url(href, base, label)
+        return {"main": main, "sub": sub, "url": url,
+                "issue": issue, "href": href}
+
+    # Strategy 1: accordionSidebar (Angular portal)
+    sidebar = soup.find("ul", id="accordionSidebar")
+    if sidebar:
+        print(f"  [{label}] nav: accordionSidebar")
+        for li in sidebar.find_all("li", class_="nav-item"):
+            main_a = li.find("a", class_="nav-link")
+            if not main_a: continue
+            mn = main_a.get_text(strip=True)
+            if not mn: continue
+            added = 0
+            for ci in li.find_all("div", class_="collapse-inner"):
+                for a in (ci.find_all("a", class_="dropdown-item")
+                          or ci.find_all("a", href=True)):
+                    sub = a.get_text(strip=True)
+                    if sub:
+                        rows.append(row(mn, sub, a.get("href", "")))
+                        added += 1
+            if not added:
+                rows.append(row(mn, "", main_a.get("href", "")))
+        if rows: return rows
+
+    # Strategy 2: Bootstrap navbar-nav (old/PHP portal)
+    nav    = soup.find("nav", class_=re.compile(r"navbar", re.I))
+    nav_ul = (nav.find("ul", class_=re.compile(r"navbar-nav", re.I))
+              if nav else None)
+    if not nav_ul:
+        for ul in soup.find_all("ul"):
+            if len(ul.find_all("li", recursive=False)) >= 3:
+                nav_ul = ul; break
+
+    if nav_ul:
+        print(f"  [{label}] nav: navbar-nav")
+        for li in nav_ul.find_all("li", recursive=False):
+            main_a = (li.find("a", class_=re.compile(r"nav-link", re.I))
+                      or li.find("a"))
+            if not main_a: continue
+            mn = main_a.get_text(strip=True).lstrip("*").strip()
+            if not mn: continue
+            mh = main_a.get("href", "")
+            dd = (li.find("div", class_=re.compile(r"dropdown-menu", re.I))
+                  or li.find("ul",  class_=re.compile(r"dropdown|sub-menu", re.I)))
+            if dd:
+                subs = (dd.find_all("a", class_=re.compile(r"dropdown-item", re.I))
+                        or dd.find_all("a", href=True))
+                added = 0
+                for a in subs:
+                    sub = a.get_text(strip=True)
+                    if sub:
+                        rows.append(row(mn, sub, a.get("href", "")))
+                        added += 1
+                if not added:
+                    rows.append(row(mn, "", mh))
+            else:
+                rows.append(row(mn, "", mh))
+        if rows: return rows
+
+    # Fallback
+    print(f"  [{label}] nav: all-anchors fallback")
+    for a in soup.find_all("a", href=True):
+        txt = a.get_text(strip=True)
+        if txt and len(txt) < 80:
+            rows.append(row(txt, "", a["href"]))
+    return rows
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+#  DATA TYPE DETECTOR
+# ─────────────────────────────────────────────────────────────────────────────
+def detect_dtype(inp):
+    itype = (inp.get("type", "text") or "text").lower()
+    name  = (inp.get("name", "") or inp.get("id", "") or "").lower()
+    ph    = (inp.get("placeholder", "") or "").lower()
+    if itype == "number":   return "NUMBER"
+    if itype == "email":    return "EMAIL"
+    if itype == "password": return "PASSWORD"
+    if itype == "date":     return "DATE"
+    if itype == "tel":      return "PHONE"
+    if itype == "file":     return "FILE"
+    if itype == "radio":    return "RADIO"
+    if itype == "checkbox": return "CHECKBOX"
+    if itype in ("submit","button","reset","image"):
+        return f"BUTTON[{itype.upper()}]"
+    for kw in ("date","dt","dob","from","to"):
+        if kw in name or kw in ph: return "DATE"
+    for kw in ("amount","sum","number","count","year","qty","no"):
+        if kw in name or kw in ph: return "NUMBER"
+    for kw in ("email","mail"):
+        if kw in name or kw in ph: return "EMAIL"
+    for kw in ("phone","mobile","mob","contact"):
+        if kw in name or kw in ph: return "PHONE"
+    return "TEXT"
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+#  PAGE CONTENT EXTRACTOR  (pure HTML — safe for both portals)
+# ─────────────────────────────────────────────────────────────────────────────
+def extract_content(html):
+    soup   = BeautifulSoup(html, "html.parser")
+    result = {"fields": [], "tables": [], "buttons": [], "headings": []}
+
+    # Headings
+    for tag in ["h1","h2","h3","h4","h5","legend","caption"]:
+        for h in soup.find_all(tag):
+            txt = h.get_text(strip=True)
+            if txt and len(txt) > 2:
+                result["headings"].append(txt[:80])
+
+    def find_label(el):
+        eid = el.get("id", "")
+        if eid:
+            lb = soup.find("label", {"for": eid})
+            if lb: return lb.get_text(strip=True).replace("*", "").strip()
+        parent = el.parent
+        for _ in range(3):
+            if not parent: break
+            lb = parent.find("label", recursive=False)
+            if lb: return lb.get_text(strip=True).replace("*", "").strip()
+            parent = parent.parent
+        return ""
+
+    def is_mandatory(el):
+        if el.has_attr("required"): return True
+        if el.get("aria-required", "") == "true": return True
+        if "*" in el.get("placeholder", ""): return True
+        p = el.parent
+        if p and "*" in p.get_text(): return True
+        return False
+
+    seen_labels = set()
+
+    def add_field(form_idx, form_name, label, dtype, mand, options=""):
+        k = label.lower()
+        if k in seen_labels or not label: return
+        seen_labels.add(k)
+        result["fields"].append({
+            "form": form_idx, "form_name": form_name,
+            "label": label[:60], "datatype": dtype,
+            "mandatory": "MANDATORY" if mand else "OPTIONAL",
+            "options": options,
+        })
+
+    # Extract from <form> tags
+    for fi, form in enumerate(soup.find_all("form"), 1):
+        leg = form.find("legend")
+        fn  = leg.get_text(strip=True)[:40] if leg else ""
+
+        for inp in form.find_all("input"):
+            itype = (inp.get("type", "text") or "text").lower()
+            if itype == "hidden": continue
+            lbl   = find_label(inp)
+            ph    = inp.get("placeholder", "").replace("*", "").strip()
+            nm    = inp.get("name", "") or inp.get("id", "")
+            disp  = lbl or ph or nm or itype
+            if disp.lower() in ("search", "search for...", ""): continue
+            add_field(fi, fn, disp, detect_dtype(inp), is_mandatory(inp))
+
+        for ta in form.find_all("textarea"):
+            lbl  = find_label(ta)
+            nm   = ta.get("name", "") or ta.get("id", "")
+            disp = lbl or nm or "textarea"
+            add_field(fi, fn, disp, "TEXTAREA", is_mandatory(ta))
+
+        for sel in form.find_all("select"):
+            lbl  = find_label(sel)
+            nm   = sel.get("name", "") or sel.get("id", "")
+            disp = lbl or nm or "select"
+            opts = [o.get_text(strip=True) for o in sel.find_all("option")
+                    if o.get_text(strip=True)]
+            add_field(fi, fn, disp, "SELECT", is_mandatory(sel),
+                      " / ".join(opts[:8]))
+
+        rg = {}
+        for r in form.find_all("input", {"type": "radio"}):
+            g = r.get("name", "radio")
+            rg.setdefault(g, []).append(find_label(r) or r.get("value", ""))
+        for g, opts in rg.items():
+            add_field(fi, fn, g, "RADIO", False, " / ".join(opts[:6]))
+
+        for chk in form.find_all("input", {"type": "checkbox"}):
+            lbl = find_label(chk) or chk.get("name", "") or chk.get("id", "")
+            if lbl: add_field(fi, fn, lbl, "CHECKBOX", False)
+
+        for btn in form.find_all(
+                lambda t: t.name == "button" or
+                (t.name == "input" and
+                 t.get("type","").lower() in ("submit","button","reset"))):
+            btype = (btn.get("type","button") or "button").upper()
+            lbl   = btn.get_text(strip=True) or btn.get("value","") or ""
+            if lbl and len(lbl) > 1:
+                result["buttons"].append({"label": lbl[:40], "btype": btype})
+
+    # Angular inputs OUTSIDE <form> (formcontrolname / ng-model)
+    for inp in soup.find_all("input"):
+        itype = (inp.get("type", "text") or "text").lower()
+        if itype == "hidden": continue
+        fc   = (inp.get("formcontrolname","") or inp.get("ng-reflect-name","")
+                or inp.get("ng-model",""))
+        lbl  = find_label(inp)
+        ph   = inp.get("placeholder","").replace("*","").strip()
+        nm   = inp.get("name","") or inp.get("id","") or fc
+        disp = lbl or ph or fc or nm
+        if disp and disp.lower() not in ("search","search for...",""):
+            mand = is_mandatory(inp) or "*" in inp.get("placeholder","")
+            add_field(0, "angular", disp, detect_dtype(inp), mand)
+
+    for sel in soup.find_all("select"):
+        fc   = sel.get("formcontrolname","") or sel.get("ng-reflect-name","")
+        lbl  = find_label(sel)
+        nm   = sel.get("name","") or sel.get("id","") or fc
+        disp = lbl or fc or nm
+        if disp:
+            opts = [o.get_text(strip=True) for o in sel.find_all("option")
+                    if o.get_text(strip=True)]
+            add_field(0, "angular", disp, "SELECT",
+                      is_mandatory(sel) or sel.has_attr("required"),
+                      " / ".join(opts[:8]))
+
+    # Standalone buttons outside forms
+    for btn in soup.find_all("button"):
+        lbl = btn.get_text(strip=True)
+        if lbl and len(lbl) > 1:
+            result["buttons"].append({
+                "label": lbl[:40],
+                "btype": (btn.get("type","button") or "button").upper()
+            })
+
+    # Tables
+    for ti, tbl in enumerate(soup.find_all("table"), 1):
+        heading = ""
+        cap = tbl.find("caption")
+        if cap: heading = cap.get_text(strip=True)
+        if not heading:
+            prev = tbl.find_previous(["h1","h2","h3","h4","h5","legend"])
+            if prev: heading = prev.get_text(strip=True)[:50]
+        if not heading: heading = f"Table {ti}"
+
+        cols = []
+        thead = tbl.find("thead")
+        if thead:
+            cols = [th.get_text(strip=True) for th in thead.find_all("th")]
+        if not cols:
+            fr = tbl.find("tr")
+            if fr: cols = [td.get_text(strip=True)
+                           for td in fr.find_all(["th","td"])]
+
+        tbody     = tbl.find("tbody")
+        row_count = (len(tbody.find_all("tr")) if tbody
+                     else max(0, len(tbl.find_all("tr")) - 1))
+
+        result["tables"].append({
+            "heading":   heading[:60],
+            "columns":   [c.strip() for c in cols if c.strip()][:20],
+            "row_count": row_count,
+        })
+
+    return result
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+#  PAGE VISITOR  — direct URL only, never back()
+# ─────────────────────────────────────────────────────────────────────────────
+def wait_for_render(driver, timeout=8):
+    """Wait for server-rendered AND Angular/React pages to fully render."""
+    try:
+        WebDriverWait(driver, timeout).until(
+            lambda d: d.execute_script("return document.readyState") == "complete")
+    except Exception: pass
+    try:
+        is_ng = driver.execute_script("return !!(window.getAllAngularTestabilities)")
+        if is_ng:
+            WebDriverWait(driver, timeout).until(
+                lambda d: d.execute_script(
+                    "return window.getAllAngularTestabilities()"
+                    ".every(t=>t.isStable())"))
+    except Exception: pass
+    try:
+        WebDriverWait(driver, 5).until(
+            lambda d: len(d.find_elements(
+                By.CSS_SELECTOR,
+                "input:not([type=hidden]),select,textarea,table,form")) > 0)
+    except Exception: pass
+    time.sleep(0.6)
+
+
+EMPTY = {"fields":[],"tables":[],"buttons":[],"headings":[]}
+
+def visit_page(driver, url, label, timeout, portal_label, interact=False):
+    """
+    Navigate DIRECTLY to url using driver.get(url).
+    Never calls back(), forward(), or any history navigation.
+    Returns dict with status and extracted content.
+    """
+    res = {"url": url, "status": "OK", "title": "", "content": EMPTY.copy()}
+
+    # Pre-flight: is the session still alive?
+    if not session_alive(driver):
+        res["status"] = "CRASHED"
+        print(f"    [{portal_label}] {label[:50]:<50}  CRASHED")
+        return res
+
+    if not url:
+        res["status"] = "NO URL"
+        print(f"    [{portal_label}] {label[:50]:<50}  NO URL")
+        return res
+
+    # Skip pages that would kill the session (logout etc.)
+    if should_skip(url, label):
+        res["status"] = "SKIPPED"
+        print(f"    [{portal_label}] {label[:50]:<50}  SKIPPED (dangerous)")
+        return res
+
+    try:
+        driver.set_page_load_timeout(timeout + 15)
+
+        # Block downloads via CDP (silent — no crash)
+        try:
+            driver.execute_cdp_cmd("Page.setDownloadBehavior",
+                                   {"behavior": "deny", "downloadPath": ""})
+        except Exception:
+            pass
+
+        # ── THE ONLY NAVIGATION METHOD USED ──────────────────────────────────
+        driver.get(url)
+        # ─────────────────────────────────────────────────────────────────────
+
+        # Dismiss any alert/popup the page triggered
+        safe_dismiss_alerts(driver)
+
+        # Wait for content to render
+        wait_for_render(driver, timeout)
+
+        res["title"] = driver.title.strip()[:70]
+
+        # Scroll to trigger lazy components
+        try:
+            driver.execute_script(
+                "window.scrollTo(0,document.body.scrollHeight)")
+            time.sleep(0.3)
+            driver.execute_script("window.scrollTo(0,0)")
+            time.sleep(0.2)
+        except Exception:
+            pass
+
+        # TEST-only: select first dropdown option (no form submit)
+        if interact:
+            for sel_el in driver.find_elements(By.CSS_SELECTOR, "select")[:5]:
+                try:
+                    s    = SeleniumSelect(sel_el)
+                    opts = [o.text for o in s.options if o.text.strip()]
+                    if len(opts) > 1:
+                        s.select_by_index(1)
+                        time.sleep(0.2)
+                except Exception:
+                    pass
+            try: wait_for_render(driver, 4)
+            except Exception: pass
+
+        res["content"] = extract_content(driver.page_source)
+        nf = len(res["content"]["fields"])
+        nt = len(res["content"]["tables"])
+        nb = len(res["content"]["buttons"])
+        print(f"    [{portal_label}] {label[:50]:<50}  "
+              f"F={nf} T={nt} B={nb}")
+
+    except TimeoutException:
+        res["status"] = "TIMEOUT"
+        try: res["content"] = extract_content(driver.page_source)
+        except Exception: pass
+        print(f"    [{portal_label}] {label[:50]:<50}  TIMEOUT")
+
+    except (WebDriverException, InvalidSessionIdException) as e:
+        msg = str(e).lower()
+        if "invalid session" in msg or "session deleted" in msg:
+            res["status"] = "CRASHED"
+            print(f"    [{portal_label}] {label[:50]:<50}  CRASHED")
+        else:
+            res["status"] = "ERROR"
+            print(f"    [{portal_label}] {label[:50]:<50}  "
+                  f"ERROR: {str(e)[:50]}")
+
+    return res
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+#  VISIT ALL PAGES  — crash-recovery loop
+# ─────────────────────────────────────────────────────────────────────────────
+def visit_all_pages(driver_ref, portal_cfg, page_map, all_keys,
+                    total, portal_label, opts, interact):
+    """
+    Visit every page by direct URL.
+    If Chrome crashes: restart driver, re-login, continue from next page.
+    driver_ref = [driver]  (list so we can swap after crash recovery)
+    """
+    page_data   = {}
+    MAX_CRASHES = 5
+    crashes     = 0
+    idx         = 0
+
+    while idx < len(all_keys):
+        driver = driver_ref[0]
+        key    = all_keys[idx]
+        row    = page_map.get(key)
+        label  = f"{key[0]} > {key[1]}" if key[1] else key[0]
+        print(f"  [{idx+1:>3}/{total}]", end=" ")
+
+        if not row or not row["url"]:
+            page_data[key] = {
+                "url": "", "status": f"NOT IN {portal_label}",
+                "title": "", "content": EMPTY.copy()}
+            print(f"    [{portal_label}] {label[:50]:<50}  "
+                  f"NOT IN {portal_label}")
+            idx += 1
+            continue
+
+        result = visit_page(
+            driver, row["url"], label,
+            opts["page_timeout"], portal_label, interact=interact)
+
+        if result["status"] == "CRASHED":
+            crashes += 1
+            page_data[key] = result
+            idx += 1
+
+            if crashes >= MAX_CRASHES:
+                print(f"\n  [!] {MAX_CRASHES} crashes — stopping {portal_label} phase")
+                # Fill remaining as CRASHED
+                for k in all_keys[idx:]:
+                    page_data[k] = {
+                        "url": "", "status": "CRASHED",
+                        "title": "", "content": EMPTY.copy()}
+                break
+
+            print(f"\n  [RECOVER] Crash #{crashes} — restarting Chrome ...")
+            try: driver.quit()
+            except Exception: pass
+            time.sleep(2)
+
+            new_driver = init_driver()
+            driver_ref[0] = new_driver
+            print(f"  [RECOVER] Re-logging into {portal_label} ...")
+            login(new_driver, portal_cfg, opts["captcha_wait"])
+            print(f"  [RECOVER] Continuing from page {idx+1}/{total}")
+            continue
+
+        page_data[key] = result
+        idx += 1
+
+    return page_data
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+#  COMPARISON FUNCTIONS
+# ─────────────────────────────────────────────────────────────────────────────
+def compare_menus(live_rows, test_rows):
+    def key(r): return (r["main"].strip().lower(), r["sub"].strip().lower())
+    lk = {key(r): r for r in live_rows}
+    tk = {key(r): r for r in test_rows}
+    out = []
+    for k in sorted(set(list(lk) + list(tk))):
+        lr, tr = lk.get(k), tk.get(k)
+        st = ("MATCH" if lr and tr else
+              "MISSING IN TEST" if lr else "EXTRA IN TEST")
+        out.append({
+            "main": (lr or tr)["main"], "sub": (lr or tr)["sub"],
+            "status": st,
+            "live_url": lr["url"] if lr else "",
+            "test_url": tr["url"] if tr else "",
+            "live_issue": lr.get("issue","") if lr else "",
+            "test_issue": tr.get("issue","") if tr else "",
+        })
+    return out
+
+
+def norm(s): return re.sub(r"[^a-z0-9]", "", s.lower())
+
+
+def compare_fields(live_fields, test_fields):
+    lmap = {norm(f["label"]): f for f in live_fields}
+    tmap = {norm(f["label"]): f for f in test_fields}
+    out  = []
+    for k in sorted(set(list(lmap) + list(tmap))):
+        lf, tf = lmap.get(k), tmap.get(k)
+        if lf and tf:
+            diffs = []
+            if lf["datatype"]  != tf["datatype"]:
+                diffs.append(f"Type: {lf['datatype']}→{tf['datatype']}")
+            if lf["mandatory"] != tf["mandatory"]:
+                diffs.append(f"Mandatory: {lf['mandatory']}→{tf['mandatory']}")
+            out.append({
+                "field": lf["label"], "status": "MISMATCH" if diffs else "MATCH",
+                "live_type": lf["datatype"],  "test_type": tf["datatype"],
+                "live_mand": lf["mandatory"], "test_mand": tf["mandatory"],
+                "live_opts": lf.get("options",""), "test_opts": tf.get("options",""),
+                "diff": " | ".join(diffs),
+            })
+        elif lf:
+            out.append({
+                "field": lf["label"], "status": "MISSING IN TEST",
+                "live_type": lf["datatype"],  "test_type": "",
+                "live_mand": lf["mandatory"], "test_mand": "",
+                "live_opts": lf.get("options",""), "test_opts": "",
+                "diff": "In LIVE, absent in TEST",
+            })
+        else:
+            out.append({
+                "field": tf["label"], "status": "EXTRA IN TEST",
+                "live_type": "", "test_type": tf["datatype"],
+                "live_mand": "", "test_mand": tf["mandatory"],
+                "live_opts": "", "test_opts": tf.get("options",""),
+                "diff": "Absent in LIVE, in TEST",
+            })
+    return out
+
+
+def compare_tables(live_tables, test_tables):
+    lmap = {norm(t["heading"]): t for t in live_tables}
+    tmap = {norm(t["heading"]): t for t in test_tables}
+    out  = []
+    for k in sorted(set(list(lmap) + list(tmap))):
+        lt, tt = lmap.get(k), tmap.get(k)
+        if lt and tt:
+            lc = {norm(c) for c in lt["columns"]}
+            tc = {norm(c) for c in tt["columns"]}
+            miss = [c for c in lt["columns"] if norm(c) not in tc]
+            xtra = [c for c in tt["columns"] if norm(c) not in lc]
+            st   = "COLUMNS DIFFER" if (miss or xtra) else "MATCH"
+            diff = ""
+            if miss: diff += "Missing: " + ", ".join(miss[:5])
+            if xtra: diff += "  Extra: " + ", ".join(xtra[:5])
+            out.append({
+                "table": lt["heading"], "status": st,
+                "live_cols": " | ".join(lt["columns"]),
+                "test_cols": " | ".join(tt["columns"]),
+                "live_rows": lt["row_count"],
+                "test_rows": tt["row_count"],
+                "diff": diff.strip(),
+            })
+        elif lt:
+            out.append({
+                "table": lt["heading"], "status": "MISSING IN TEST",
+                "live_cols": " | ".join(lt["columns"]), "test_cols": "",
+                "live_rows": lt["row_count"], "test_rows": "",
+                "diff": "Table in LIVE only",
+            })
+        else:
+            out.append({
+                "table": tt["heading"], "status": "EXTRA IN TEST",
+                "live_cols": "", "test_cols": " | ".join(tt["columns"]),
+                "live_rows": "", "test_rows": tt["row_count"],
+                "diff": "Table in TEST only",
+            })
+    return out
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+#  EXCEL REPORT  — 7 sheets
+# ─────────────────────────────────────────────────────────────────────────────
+def write_excel(live_rows, test_rows, menu_cmp, page_results, config):
+    cfg = config["test"]
+    wb  = Workbook()
+
+    def menu_sheet(ws, rows, title, bg_hdr, bg_main):
+        ws.cell(1,1,title).font = xfnt(True, bg_hdr[2:], 12)
+        ws.merge_cells("A1:F1")
+        ws.cell(1,1).fill = xfill(bg_hdr); ws.cell(1,1).alignment = xaln("center")
+        for ci,(h,w) in enumerate(zip(
+            ["#","Main Menu","Sub Menu","URL","Issue","Type"],
+            [5,  28,          32,        65,   35,     10]),1):
+            hdr(ws, 2, ci, h, bg_hdr[2:] if len(bg_hdr)==8 else "003366", w=w)
+        for ri,r in enumerate(rows,3):
+            is_sub = bool(r["sub"])
+            bg = ("FFFFEBEE" if r.get("issue") else
+                  bg_main if not is_sub else rbg(ri))
+            for ci,v in enumerate([ri-2,r["main"],r["sub"],
+                                    r["url"] or r["href"],
+                                    r.get("issue",""),
+                                    "Sub" if is_sub else "Main"],1):
+                c = ws.cell(ri,ci,v)
+                c.fill=xfill(bg); c.border=xbrd(); c.alignment=xaln()
+                c.font=(Font(color="FF1565C0",size=10,underline="single")
+                        if ci==4 else xfnt(bold=not is_sub and ci==2))
+        ws.freeze_panes="A3"
+
+    # Sheet 1: Live Menu
+    ws1 = wb.active; ws1.title = "Live Menu"
+    menu_sheet(ws1, live_rows, "LIVE PORTAL — READ-ONLY", "FF8B0000", "FFFCE4EC")
+
+    # Sheet 2: Test Menu
+    ws2 = wb.create_sheet("Test Menu")
+    menu_sheet(ws2, test_rows, "TEST PORTAL", "FF1B5E20", "FFE8F5E9")
+
+    # Sheet 3: Menu Comparison
+    ws3 = wb.create_sheet("Menu Comparison")
+    for ci,(h,w) in enumerate(zip(
+        ["#","Main Menu","Sub Menu","Status",
+         "Live URL","Test URL","Live Issue","Test Issue"],
+        [4,  22,          28,        18,
+         52,       52,        28,          28]),1):
+        hdr(ws3,1,ci,h,"4A148C",w=w)
+    for ri,r in enumerate(menu_cmp,2):
+        bg=rbg(ri)
+        for ci,v in enumerate([ri-1,r["main"],r["sub"],"",
+                                r["live_url"],r["test_url"],
+                                r.get("live_issue",""),
+                                r.get("test_issue","")],1):
+            if ci==4: st_cell(ws3,ri,ci,r["status"])
+            else:     dat(ws3,ri,ci,v,bg)
+    ws3.freeze_panes="A2"
+    ws3.auto_filter.ref=f"A1:H{len(menu_cmp)+1}"
+
+    # Sheet 4: Page Content
+    ws4 = wb.create_sheet("Page Content")
+    for ci,(h,w) in enumerate(zip(
+        ["#","Page","Portal","Status","Title","Fields","Tables","Buttons","Headings"],
+        [4,  42,     8,       12,      40,      8,       8,       8,        65]),1):
+        hdr(ws4,1,ci,h,"006064",w=w)
+    r4=2
+    for pr in page_results:
+        for portal in ["live","test"]:
+            pd=pr[portal]; ct=pd["content"]; bg=rbg(r4)
+            for ci,v in enumerate([r4-1,pr["label"],portal.upper(),"",
+                                    pd["title"],len(ct["fields"]),
+                                    len(ct["tables"]),len(ct["buttons"]),
+                                    " | ".join(ct["headings"][:3])],1):
+                if ci==4: st_cell(ws4,r4,ci,pd["status"])
+                else:     dat(ws4,r4,ci,v,bg)
+            r4+=1
+    ws4.freeze_panes="A2"
+
+    # Sheet 5: Field Comparison
+    ws5 = wb.create_sheet("Field Comparison")
+    for ci,(h,w) in enumerate(zip(
+        ["#","Page","Field Label","Status",
+         "Live Type","Test Type","Live Mandatory","Test Mandatory",
+         "Live Options","Test Options","Diff Notes"],
+        [4,  38,    42,           18,
+         14,         14,          16,             16,
+         35,           35,           50]),1):
+        hdr(ws5,1,ci,h,"1A237E",w=w)
+    r5=2
+    for pr in page_results:
+        for fc in pr["field_cmp"]:
+            bg=rbg(r5)
+            for ci,v in enumerate([r5-1,pr["label"],fc["field"],"",
+                                    fc["live_type"],fc["test_type"],
+                                    fc["live_mand"],fc["test_mand"],
+                                    fc["live_opts"],fc["test_opts"],
+                                    fc["diff"]],1):
+                if ci==4: st_cell(ws5,r5,ci,fc["status"])
+                else:     dat(ws5,r5,ci,v,bg)
+            r5+=1
+    ws5.freeze_panes="A2"
+    ws5.auto_filter.ref=f"A1:K{r5}"
+
+    # Sheet 6: Table Comparison
+    ws6 = wb.create_sheet("Table Comparison")
+    for ci,(h,w) in enumerate(zip(
+        ["#","Page","Table Name","Status",
+         "Live Columns","Test Columns",
+         "Live Rows","Test Rows","Diff Notes"],
+        [4,  38,    35,          18,
+         60,           60,
+         10,        10,        50]),1):
+        hdr(ws6,1,ci,h,"880E4F",w=w)
+    r6=2
+    for pr in page_results:
+        for tc in pr["table_cmp"]:
+            bg=rbg(r6)
+            for ci,v in enumerate([r6-1,pr["label"],tc["table"],"",
+                                    tc["live_cols"],tc["test_cols"],
+                                    tc["live_rows"],tc["test_rows"],
+                                    tc["diff"]],1):
+                if ci==4: st_cell(ws6,r6,ci,tc["status"])
+                else:     dat(ws6,r6,ci,v,bg)
+            r6+=1
+    ws6.freeze_panes="A2"
+    ws6.auto_filter.ref=f"A1:I{r6}"
+
+    # Sheet 7: Summary
+    ws7 = wb.create_sheet("Summary")
+    ws7.column_dimensions["A"].width=34
+    ws7.column_dimensions["B"].width=40
+
+    all_fc=[fc for pr in page_results for fc in pr["field_cmp"]]
+    all_tc=[tc for pr in page_results for tc in pr["table_cmp"]]
+    def cnt(lst,st): return sum(1 for x in lst if x["status"]==st)
+
+    rows_s=[
+        ("Report Generated", datetime.now().strftime("%Y-%m-%d %H:%M:%S"),None),
+        ("","",""),
+        ("-- PORTALS --","",None),
+        ("Live URL",     config["live"]["url"],      None),
+        ("Live User",    config["live"]["username"],  None),
+        ("Test URL",     config["test"]["url"],       None),
+        ("Test User",    config["test"]["username"],  None),
+        ("Output",       config["test"]["folder"],    None),
+        ("","",""),
+        ("-- MENU --","",None),
+        ("Live items",   len(live_rows),              None),
+        ("Test items",   len(test_rows),              None),
+        ("Match",        cnt(menu_cmp,"MATCH"),       "FF1B5E20"),
+        ("Missing",      cnt(menu_cmp,"MISSING IN TEST"),"FFB71C1C"),
+        ("Extra",        cnt(menu_cmp,"EXTRA IN TEST"),  "FFF57F17"),
+        ("","",""),
+        ("-- FIELDS --","",None),
+        ("Total",        len(all_fc),                 None),
+        ("Match",        cnt(all_fc,"MATCH"),         "FF1B5E20"),
+        ("Missing",      cnt(all_fc,"MISSING IN TEST"),"FFB71C1C"),
+        ("Extra",        cnt(all_fc,"EXTRA IN TEST"), "FFF57F17"),
+        ("Mismatch",     cnt(all_fc,"MISMATCH"),      "FFE65100"),
+        ("","",""),
+        ("-- TABLES --","",None),
+        ("Total",        len(all_tc),                 None),
+        ("Match",        cnt(all_tc,"MATCH"),         "FF1B5E20"),
+        ("Missing",      cnt(all_tc,"MISSING IN TEST"),"FFB71C1C"),
+        ("Extra",        cnt(all_tc,"EXTRA IN TEST"), "FFF57F17"),
+        ("Cols differ",  cnt(all_tc,"COLUMNS DIFFER"),"FFE65100"),
+    ]
+    for ri,(lbl,val,color) in enumerate(rows_s,1):
+        ws7.cell(ri,1,lbl).font=xfnt(bold="--" in str(lbl),sz=11)
+        v=ws7.cell(ri,2,str(val))
+        v.font=xfnt(color=color,sz=12,bold=True) if color else xfnt(sz=11)
+
+    wb.save(cfg["excel"])
+    print(f"\n  Excel: {os.path.abspath(cfg['excel'])}")
+    print(f"  Fields : match={cnt(all_fc,'MATCH')} "
+          f"missing={cnt(all_fc,'MISSING IN TEST')} "
+          f"extra={cnt(all_fc,'EXTRA IN TEST')} "
+          f"mismatch={cnt(all_fc,'MISMATCH')}")
+    print(f"  Tables : match={cnt(all_tc,'MATCH')} "
+          f"missing={cnt(all_tc,'MISSING IN TEST')} "
+          f"extra={cnt(all_tc,'EXTRA IN TEST')} "
+          f"cols-differ={cnt(all_tc,'COLUMNS DIFFER')}")
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+#  MAIN
+# ─────────────────────────────────────────────────────────────────────────────
+def main():
+    config = get_config()
+    if not config:
+        print("Cancelled."); return
+
+    live_cfg = config["live"]
+    test_cfg = config["test"]
+    opts     = config["options"]
+
+    print(f"""
+{'='*62}
+  LIVE  : {live_cfg['url']}
+  TEST  : {test_cfg['url']}
+  Folder: {test_cfg['folder']}
+  Navigation: driver.get(url) ONLY — never back()
+  Dangerous pages (logout etc.): auto-skipped
+  Crash recovery: auto-restart Chrome + re-login
+{'='*62}""")
+
+    driver = init_driver()
+    driver_ref = [driver]   # mutable ref for crash recovery
+
+    live_rows = []
+    test_rows = []
+
+    try:
+        # ── PHASE 1: LIVE — login + extract menu ─────────────────────────────
+        print("\n[PHASE 1] LIVE — login + menu extraction")
+        login(driver_ref[0], live_cfg, opts["captcha_wait"])
+
+        # Expand all dropdowns via CSS (no clicks)
+        driver_ref[0].execute_script("""
+            document.querySelectorAll('.dropdown-menu,.collapse')
+                .forEach(el=>{el.classList.add('show');
+                              el.style.display='block'});
+            document.querySelectorAll('[aria-expanded]')
+                .forEach(el=>el.setAttribute('aria-expanded','true'));
+        """)
+        time.sleep(2)
+        live_html = driver_ref[0].page_source
+        with open(test_cfg["live_html"], "w", encoding="utf-8") as f:
+            f.write(live_html)
+        live_rows = parse_menu(live_html, live_cfg["base"], "LIVE")
+        print(f"  Live menu: {len(live_rows)} items")
+
+        # Clear LIVE session
+        try:
+            driver_ref[0].delete_all_cookies()
+        except Exception:
+            pass
+        time.sleep(1)
+
+        # ── PHASE 2: TEST — login + extract menu ─────────────────────────────
+        print("\n[PHASE 2] TEST — login + menu extraction")
+        login(driver_ref[0], test_cfg, opts["captcha_wait"])
+
+        driver_ref[0].execute_script("""
+            document.querySelectorAll('.collapse,.dropdown-menu,[data-bs-toggle]')
+                .forEach(el=>{el.classList.add('show');
+                              el.style.display='block'});
+        """)
+        time.sleep(2)
+        test_html = driver_ref[0].page_source
+        with open(test_cfg["test_html"], "w", encoding="utf-8") as f:
+            f.write(test_html)
+        test_rows = parse_menu(test_html, test_cfg["base"], "TEST")
+        print(f"  Test menu: {len(test_rows)} items")
+
+        # Menu comparison
+        menu_cmp = compare_menus(live_rows, test_rows)
+        print(f"\n  Menu: "
+              f"{sum(1 for c in menu_cmp if c['status']=='MATCH')} match | "
+              f"{sum(1 for c in menu_cmp if c['status']=='MISSING IN TEST')} missing | "
+              f"{sum(1 for c in menu_cmp if c['status']=='EXTRA IN TEST')} extra")
+
+        # Build unified key list
+        def row_key(r):
+            return (r["main"].strip().lower(), r["sub"].strip().lower())
+        live_map = {row_key(r): r for r in live_rows}
+        test_map = {row_key(r): r for r in test_rows}
+        all_keys = sorted(set(list(live_map) + list(test_map)))
+        total    = len(all_keys)
+
+        # ── PHASE 3: Visit all LIVE pages ────────────────────────────────────
+        print(f"\n[PHASE 3] LIVE — visiting {total} pages")
+        print("  Navigation: driver.get(url) only. Logout/download pages skipped.")
+
+        # Clear TEST session, go back to LIVE
+        try: driver_ref[0].delete_all_cookies()
+        except Exception: pass
+        time.sleep(1)
+        login(driver_ref[0], live_cfg, opts["captcha_wait"])
+
+        live_page_data = visit_all_pages(
+            driver_ref, live_cfg, live_map, all_keys,
+            total, "LIVE", opts, interact=False)
+        driver = driver_ref[0]
+
+        # ── PHASE 4: Visit all TEST pages ────────────────────────────────────
+        print(f"\n[PHASE 4] TEST — visiting {total} pages")
+        print("  Navigation: driver.get(url) only. Logout/download pages skipped.")
+
+        try: driver.delete_all_cookies()
+        except Exception: pass
+        time.sleep(1)
+        login(driver, test_cfg, opts["captcha_wait"])
+        driver_ref[0] = driver
+
+        test_page_data = visit_all_pages(
+            driver_ref, test_cfg, test_map, all_keys,
+            total, "TEST", opts, interact=opts["interact"])
+        driver = driver_ref[0]
+
+        # ── PHASE 5: Compare content ──────────────────────────────────────────
+        print(f"\n[PHASE 5] COMPARING CONTENT")
+        page_results = []
+        for key in all_keys:
+            label = f"{key[0]} > {key[1]}" if key[1] else key[0]
+            ld    = live_page_data.get(key, {
+                "url":"","status":"NOT IN LIVE","title":"",
+                "content": EMPTY.copy()})
+            td    = test_page_data.get(key, {
+                "url":"","status":"NOT IN TEST","title":"",
+                "content": EMPTY.copy()})
+            lc    = ld["content"]
+            tc    = td["content"]
+            fc    = compare_fields(lc["fields"],  tc["fields"])
+            tbl_c = compare_tables(lc["tables"],  tc["tables"])
+            fm    = sum(1 for f in fc    if f["status"]=="MATCH")
+            tm    = sum(1 for t in tbl_c if t["status"]=="MATCH")
+            print(f"  {label[:54]:<54}  "
+                  f"F:{len(fc)}({fm}ok) T:{len(tbl_c)}({tm}ok)")
+            page_results.append({
+                "key": key, "label": label,
+                "main": key[0], "sub": key[1],
+                "live": ld, "test": td,
+                "field_cmp": fc, "table_cmp": tbl_c,
+            })
+
+        # ── Write Excel ───────────────────────────────────────────────────────
+        write_excel(live_rows, test_rows, menu_cmp, page_results, config)
+
+        print(f"""
+{'='*62}
+  DONE!
+  Folder : {test_cfg['folder']}
+  Excel  : {test_cfg['excel']}
+{'='*62}""")
+
+    except KeyboardInterrupt:
+        print("\n[!] Interrupted by user.")
+    except Exception as e:
+        import traceback
+        print(f"\n[ERROR] {e}")
+        traceback.print_exc()
+    finally:
+        input("\nPress ENTER to close browser ...")
+        try: driver_ref[0].quit()
+        except Exception: pass
+
+
+if __name__ == "__main__":
+    main()
+    
+    
